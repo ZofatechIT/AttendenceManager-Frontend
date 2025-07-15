@@ -22,7 +22,7 @@ export default function AdminDashboard() {
     async function fetchUsers() {
       setLoading(true);
       try {
-        const res = await fetch('http://localhost:5001/api/admin/users', {
+        const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/users', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error('Failed to fetch users');
@@ -54,7 +54,7 @@ export default function AdminDashboard() {
       if (idDocs && idDocs.length > 0) {
         Array.from(idDocs).forEach(file => formData.append('idDocs', file));
       }
-      const res = await fetch('http://localhost:5001/api/admin/add-user', {
+      const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/add-user', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -64,7 +64,7 @@ export default function AdminDashboard() {
       setProfilePic(null);
       setIdDocs([]);
       // Refresh users
-      const usersRes = await fetch('http://localhost:5001/api/admin/users', {
+      const usersRes = await fetch('https://attendencemanager-backend.onrender.com/api/admin/users', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(await usersRes.json());
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
     setLoadingAttendance(true);
     setAttendance([]);
     try {
-      const res = await fetch(`http://localhost:5001/api/admin/user-attendance/${user.employeeId}`, {
+      const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/user-attendance/${user.employeeId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Failed to fetch attendance');
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
     try {
       const body = { name: editUser.name, isAdmin: editUser.isAdmin, employeeId: editUser.employeeId };
       if (editUser.password) body.password = editUser.password;
-      const res = await fetch(`http://localhost:5001/api/admin/edit-user/${selectedUser.employeeId}`, {
+      const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/edit-user/${selectedUser.employeeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
@@ -131,7 +131,7 @@ export default function AdminDashboard() {
       setSelectedUser({ ...editUser, password: undefined });
       setEditMode(false);
       // Refresh users
-      const usersRes = await fetch('http://localhost:5001/api/admin/users', {
+      const usersRes = await fetch('https://attendencemanager-backend.onrender.com/api/admin/users', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(await usersRes.json());
@@ -144,13 +144,13 @@ export default function AdminDashboard() {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
     setError('');
     try {
-      const res = await fetch(`http://localhost:5001/api/admin/delete-user/${employeeId}`, {
+      const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/delete-user/${employeeId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error((await res.json()).message || 'Failed to delete user');
       // Refresh users
-      const usersRes = await fetch('http://localhost:5001/api/admin/users', {
+      const usersRes = await fetch('https://attendencemanager-backend.onrender.com/api/admin/users', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(await usersRes.json());
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
   const handleGenerateId = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5001/api/admin/next-employee-id', {
+      const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/next-employee-id', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Failed to fetch next ID');
@@ -225,7 +225,7 @@ export default function AdminDashboard() {
         endTime: toISO(editRecordData.endTime),
       };
       
-      const res = await fetch(`http://localhost:5001/api/admin/attendance/record/${recordId}`, {
+      const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/attendance/record/${recordId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),

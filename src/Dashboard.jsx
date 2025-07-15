@@ -48,7 +48,7 @@ export default function Dashboard({ user }) {
   // Send attendance event to backend
   const sendAttendance = async (type, time, lat, lng) => {
     try {
-      await fetch('http://localhost:5001/api/attendance', {
+      await fetch('https://attendencemanager-backend.onrender.com/api/attendance', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,20 +61,16 @@ export default function Dashboard({ user }) {
 
   // Start time logic
   const handleStart = () => {
-    if (startTime) {
-      Swal.fire({
-        title: 'Overwrite Start Time?',
-        text: 'You already have a start time for today. Overwrite and reset all later times?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, overwrite',
-        cancelButtonText: 'Cancel'
-      }).then(result => {
-        if (result.isConfirmed) doStart();
-      });
-    } else {
-      doStart();
-    }
+    Swal.fire({
+      title: 'Confirm Start Time',
+      text: 'Are you sure you want to begin your work day?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, start now!',
+      cancelButtonText: 'Cancel'
+    }).then(result => {
+      if (result.isConfirmed) doStart();
+    });
   };
   const doStart = () => {
     setStarted(true);
@@ -109,20 +105,16 @@ export default function Dashboard({ user }) {
 
   // Lunch break start
   const handleLunchStart = () => {
-    if (lunchStartTime) {
-      Swal.fire({
-        title: 'Overwrite Lunch Start?',
-        text: 'You already have a lunch start time for today. Overwrite and reset all later times?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, overwrite',
-        cancelButtonText: 'Cancel'
-      }).then(result => {
-        if (result.isConfirmed) doLunchStart();
-      });
-    } else {
-      doLunchStart();
-    }
+    Swal.fire({
+      title: 'Confirm Lunch Break',
+      text: 'Ready to start your lunch break?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, start lunch!',
+      cancelButtonText: 'Cancel'
+    }).then(result => {
+      if (result.isConfirmed) doLunchStart();
+    });
   };
   const doLunchStart = () => {
     setLunchStarted(true);
@@ -154,20 +146,16 @@ export default function Dashboard({ user }) {
 
   // Lunch break end
   const handleLunchEnd = () => {
-    if (lunchEndTime) {
-      Swal.fire({
-        title: 'Overwrite Lunch End?',
-        text: 'You already have a lunch end time for today. Overwrite and reset end time?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, overwrite',
-        cancelButtonText: 'Cancel'
-      }).then(result => {
-        if (result.isConfirmed) doLunchEnd();
-      });
-    } else {
-      doLunchEnd();
-    }
+    Swal.fire({
+      title: 'Confirm End of Lunch',
+      text: 'Are you ready to resume work?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, back to work!',
+      cancelButtonText: 'Cancel'
+    }).then(result => {
+      if (result.isConfirmed) doLunchEnd();
+    });
   };
   const doLunchEnd = () => {
     setLunchEnded(true);
@@ -193,20 +181,16 @@ export default function Dashboard({ user }) {
 
   // End work
   const handleEnd = () => {
-    if (endTime) {
-      Swal.fire({
-        title: 'Overwrite End Time?',
-        text: 'You already have an end time for today. Overwrite?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, overwrite',
-        cancelButtonText: 'Cancel'
-      }).then(result => {
-        if (result.isConfirmed) doEnd();
-      });
-    } else {
-      doEnd();
-    }
+    Swal.fire({
+      title: 'Confirm End of Day',
+      text: 'Are you sure you want to end your work day?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, end my day!',
+      cancelButtonText: 'Cancel'
+    }).then(result => {
+      if (result.isConfirmed) doEnd();
+    });
   };
   const doEnd = () => {
     setEnded(true);
@@ -242,7 +226,7 @@ export default function Dashboard({ user }) {
   useEffect(() => {
     async function fetchAttendance() {
       try {
-        const res = await fetch('http://localhost:5001/api/attendance', {
+        const res = await fetch('https://attendencemanager-backend.onrender.com/api/attendance', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
