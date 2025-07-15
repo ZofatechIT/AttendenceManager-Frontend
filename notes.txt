@@ -1,0 +1,12 @@
+add admin panel btn ✅
+add auto id generator  ✅
+add a clock thats working ✅
+make time and date bigger ✅
+make ui more interactive 
+give location on the side of each timefix manage users page ✅ 
+restyle that above page ✅
+make manage users seperate page ✅ 
+fix the styling of logout button ✅ 
+name email phone adress pic and id doc pics when regidtring a new person ✅
+change time as an admin edit 0r add time ✅
+replace start time donot disable it ✅
