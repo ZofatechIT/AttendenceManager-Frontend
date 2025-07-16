@@ -16,6 +16,8 @@ export default function AdminDashboard() {
   const [editRecordData, setEditRecordData] = useState(null);
   const [profilePic, setProfilePic] = useState(null);
   const [idDocs, setIdDocs] = useState([]);
+  const [editProfilePic, setEditProfilePic] = useState(null);
+  const [editIdDocs, setEditIdDocs] = useState([]);
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -110,6 +112,8 @@ export default function AdminDashboard() {
   const handleEdit = () => {
     setEditMode(true);
     setEditUser({ ...selectedUser, password: '' });
+    setEditProfilePic(null);
+    setEditIdDocs([]);
   };
 
   const handleEditChange = e => {
@@ -120,12 +124,23 @@ export default function AdminDashboard() {
   const handleSaveEdit = async () => {
     setError('');
     try {
-      const body = { name: editUser.name, isAdmin: editUser.isAdmin, employeeId: editUser.employeeId };
-      if (editUser.password) body.password = editUser.password;
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('name', editUser.name);
+      formData.append('isAdmin', editUser.isAdmin);
+      formData.append('employeeId', editUser.employeeId);
+      formData.append('email', editUser.email || '');
+      formData.append('phone', editUser.phone || '');
+      formData.append('address', editUser.address || '');
+      if (editUser.password) formData.append('password', editUser.password);
+      if (editProfilePic) formData.append('profilePic', editProfilePic);
+      if (editIdDocs && editIdDocs.length > 0) {
+        Array.from(editIdDocs).forEach(file => formData.append('idDocs', file));
+      }
       const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/edit-user/${selectedUser.employeeId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
       });
       if (!res.ok) throw new Error((await res.json()).message || 'Failed to update user');
       setSelectedUser({ ...editUser, password: undefined });
@@ -348,9 +363,18 @@ export default function AdminDashboard() {
               <input name="name" value={editUser.name} onChange={handleEditChange} style={inputStyle} placeholder="Name" />
               <input name="employeeId" value={editUser.employeeId} onChange={handleEditChange} style={inputStyle} placeholder="Employee ID" />
               <input name="password" value={editUser.password} onChange={handleEditChange} style={inputStyle} placeholder="New Password (leave blank to keep)" type="password" />
+              <input name="email" value={editUser.email || ''} onChange={handleEditChange} style={inputStyle} placeholder="Email" />
+              <input name="phone" value={editUser.phone || ''} onChange={handleEditChange} style={inputStyle} placeholder="Phone" />
+              <input name="address" value={editUser.address || ''} onChange={handleEditChange} style={inputStyle} placeholder="Address" />
               <label style={{ display: 'block', margin: '8px 0' }}>
                 <input type="checkbox" name="isAdmin" checked={editUser.isAdmin} onChange={handleEditChange} /> Admin
               </label>
+              <div style={{ margin: '8px 0' }}>
+                <label>Profile Picture: <input type="file" accept="image/*" onChange={e => setEditProfilePic(e.target.files[0])} /></label>
+              </div>
+              <div style={{ margin: '8px 0' }}>
+                <label>ID Document Images: <input type="file" accept="image/*" multiple onChange={e => setEditIdDocs(e.target.files)} /></label>
+              </div>
               <button style={{ ...btnStyle, marginTop: 8 }} onClick={handleSaveEdit}>Save</button>
               <button style={{ ...btnStyle, background: '#888', marginTop: 8 }} onClick={() => setEditMode(false)}>Cancel</button>
             </>
