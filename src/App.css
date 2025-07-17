@@ -16,6 +16,10 @@ html, body {
   box-sizing: border-box;
 }
 
+body, html {
+  color: #000 !important;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -228,5 +232,8 @@ html, body {
   .login-bg {
     padding: 0;
     min-width: 120vw;
+  }
+  body, html {
+    color: #000 !important;
   }
 }
