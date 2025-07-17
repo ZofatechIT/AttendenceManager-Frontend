@@ -262,6 +262,7 @@ export default function AdminDashboard() {
   if (!manageMode) {
     return (
       <div style={containerStyle}>
+        <button onClick={() => window.location.href = '/'} style={{ ...btnStyle, background: '#007bff', color: '#fff', marginBottom: 12 }}>Home</button>
         <h2 style={headerStyle}>Admin Dashboard</h2>
         <form onSubmit={handleAddUser} style={formStyle} encType="multipart/form-data">
           <h4>Add User</h4>
@@ -296,6 +297,7 @@ export default function AdminDashboard() {
   if (manageMode && !selectedUser) {
     return (
       <div className="admin-container">
+        <button onClick={() => window.location.href = '/'} style={{ ...btnStyle, background: '#007bff', color: '#fff', marginBottom: 12 }}>Home</button>
         <h2>Manage Users</h2>
         <button onClick={handleBack} className="btn btn-secondary">
           Back
