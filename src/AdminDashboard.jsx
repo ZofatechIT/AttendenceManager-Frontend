@@ -4,7 +4,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ employeeId: '', password: '', name: '', isAdmin: false, email: '', phone: '', address: '' });
+  const [form, setForm] = useState({ employeeId: '', password: '', name: '', isAdmin: false, email: '', phone: '', address: '', location: '' });
   const [adding, setAdding] = useState(false);
   const [manageMode, setManageMode] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -16,8 +16,9 @@ export default function AdminDashboard() {
   const [editRecordData, setEditRecordData] = useState(null);
   const [profilePic, setProfilePic] = useState(null);
   const [idDocs, setIdDocs] = useState([]);
-  const [editProfilePic, setEditProfilePic] = useState(null);
-  const [editIdDocs, setEditIdDocs] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [newLocation, setNewLocation] = useState('');
+  const [showLocationManager, setShowLocationManager] = useState(false);
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -35,13 +36,68 @@ export default function AdminDashboard() {
         setLoading(false);
       }
     }
+    async function fetchLocations() {
+      try {
+        const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/locations', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error('Failed to fetch locations');
+        setLocations(await res.json());
+      } catch (err) {
+        console.error('Failed to fetch locations:', err);
+      }
+    }
     fetchUsers();
+    fetchLocations();
     // eslint-disable-next-line
   }, []);
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target;
     setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleAddNewLocation = async () => {
+    if (!newLocation.trim()) return;
+    try {
+      const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/add-location', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: newLocation }),
+      });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to add location');
+      setNewLocation('');
+      // Refresh locations
+      const locationsRes = await fetch('https://attendencemanager-backend.onrender.com/api/admin/locations', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLocations(await locationsRes.json());
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleDeleteLocation = async (locationId) => {
+    if (!window.confirm('Are you sure you want to delete this location? This will remove it from all users.')) return;
+    try {
+      const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/delete-location/${locationId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to delete location');
+      // Refresh locations
+      const locationsRes = await fetch('https://attendencemanager-backend.onrender.com/api/admin/locations', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setLocations(await locationsRes.json());
+      // Also refresh users in case their location was unset
+      const usersRes = await fetch('https://attendencemanager-backend.onrender.com/api/admin/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(await usersRes.json());
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const handleAddUser = async e => {
@@ -62,7 +118,7 @@ export default function AdminDashboard() {
         body: formData,
       });
       if (!res.ok) throw new Error((await res.json()).message || 'Failed to add user');
-      setForm({ employeeId: '', password: '', name: '', isAdmin: false, email: '', phone: '', address: '' });
+      setForm({ employeeId: '', password: '', name: '', isAdmin: false, email: '', phone: '', address: '', location: '' });
       setProfilePic(null);
       setIdDocs([]);
       // Refresh users
@@ -112,8 +168,6 @@ export default function AdminDashboard() {
   const handleEdit = () => {
     setEditMode(true);
     setEditUser({ ...selectedUser, password: '' });
-    setEditProfilePic(null);
-    setEditIdDocs([]);
   };
 
   const handleEditChange = e => {
@@ -124,23 +178,14 @@ export default function AdminDashboard() {
   const handleSaveEdit = async () => {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const formData = new FormData();
-      formData.append('name', editUser.name);
-      formData.append('isAdmin', editUser.isAdmin);
-      formData.append('employeeId', editUser.employeeId);
-      formData.append('email', editUser.email || '');
-      formData.append('phone', editUser.phone || '');
-      formData.append('address', editUser.address || '');
-      if (editUser.password) formData.append('password', editUser.password);
-      if (editProfilePic) formData.append('profilePic', editProfilePic);
-      if (editIdDocs && editIdDocs.length > 0) {
-        Array.from(editIdDocs).forEach(file => formData.append('idDocs', file));
-      }
+      const body = { name: editUser.name, isAdmin: editUser.isAdmin, employeeId: editUser.employeeId };
+      if (editUser.password) body.password = editUser.password;
+      if (editUser.location) body.location = editUser.location;
+
       const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/edit-user/${selectedUser.employeeId}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error((await res.json()).message || 'Failed to update user');
       setSelectedUser({ ...editUser, password: undefined });
@@ -259,11 +304,54 @@ export default function AdminDashboard() {
   };
 
   // Main admin dashboard
+  if (showLocationManager) {
+    return (
+      <div style={modalOverlayStyle}>
+        <div style={modalContentStyle}>
+          <h2>Manage Locations</h2>
+          <div style={{ margin: '16px 0' }}>
+            {locations.map(loc => (
+              <div key={loc._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', borderBottom: '1px solid #eee' }}>
+                <span>{loc.name}</span>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteLocation(loc._id)}
+                  style={{ background: 'none', border: 'none', color: 'red', cursor: 'pointer', fontSize: 20 }}
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8, margin: '16px 0' }}>
+            <input
+              type="text"
+              placeholder="New Location Name"
+              value={newLocation}
+              onChange={e => setNewLocation(e.target.value)}
+              style={{ ...inputStyle, flexGrow: 1 }}
+            />
+            <button type="button" onClick={handleAddNewLocation} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14, background: '#17a2b8' }}>Add</button>
+          </div>
+          {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
+          <button style={{ ...btnStyle, background: '#888', marginTop: 16 }} onClick={() => setShowLocationManager(false)}>Close</button>
+        </div>
+      </div>
+    );
+  }
+
   if (!manageMode) {
     return (
       <div style={containerStyle}>
-        <button onClick={() => window.location.href = '/'} style={{ ...btnStyle, background: '#007bff', color: '#fff', marginBottom: 12 }}>Home</button>
         <h2 style={headerStyle}>Admin Dashboard</h2>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+          <button 
+            onClick={() => window.location.href = '/'} 
+            style={{ ...btnStyle, width: 'auto', padding: '8px 16px', fontSize: 14, background: '#28a745', marginRight: 8 }}
+          >
+            Home
+          </button>
+        </div>
         <form onSubmit={handleAddUser} style={formStyle} encType="multipart/form-data">
           <h4>Add User</h4>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -276,6 +364,16 @@ export default function AdminDashboard() {
           <input name="email" placeholder="Email" value={form.email} onChange={handleChange} style={inputStyle} />
           <input name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} style={inputStyle} />
           <input name="address" placeholder="Address" value={form.address} onChange={handleChange} style={inputStyle} />
+
+          <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+            <select name="location" value={form.location} onChange={handleChange} style={{...inputStyle, flexGrow: 1}}>
+              <option value="">Select Location</option>
+              {locations.map(loc => (
+                <option key={loc._id} value={loc._id}>{loc.name}</option>
+              ))}
+            </select>
+            <button type="button" onClick={() => setShowLocationManager(true)} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14 }}>Manage</button>
+          </div>
           <label style={{ display: 'block', margin: '8px 0' }}>
             <input type="checkbox" name="isAdmin" checked={form.isAdmin} onChange={handleChange} /> Admin
           </label>
@@ -297,7 +395,6 @@ export default function AdminDashboard() {
   if (manageMode && !selectedUser) {
     return (
       <div className="admin-container">
-        <button onClick={() => window.location.href = '/'} style={{ ...btnStyle, background: '#007bff', color: '#fff', marginBottom: 12 }}>Home</button>
         <h2>Manage Users</h2>
         <button onClick={handleBack} className="btn btn-secondary">
           Back
@@ -348,6 +445,8 @@ export default function AdminDashboard() {
           {selectedUser.email && <div style={{ fontSize: 14, color: '#888' }}>Email: {selectedUser.email}</div>}
           {selectedUser.phone && <div style={{ fontSize: 14, color: '#888' }}>Phone: {selectedUser.phone}</div>}
           {selectedUser.address && <div style={{ fontSize: 14, color: '#888' }}>Address: {selectedUser.address}</div>}
+          {selectedUser.location && <div style={{ fontSize: 14, color: '#888' }}>Location: {locations.find(l => l._id === selectedUser.location)?.name}</div>}
+
           {selectedUser.idDocs && selectedUser.idDocs.length > 0 && (
             <div style={{ marginTop: 10 }}>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>ID Documents:</div>
@@ -365,18 +464,16 @@ export default function AdminDashboard() {
               <input name="name" value={editUser.name} onChange={handleEditChange} style={inputStyle} placeholder="Name" />
               <input name="employeeId" value={editUser.employeeId} onChange={handleEditChange} style={inputStyle} placeholder="Employee ID" />
               <input name="password" value={editUser.password} onChange={handleEditChange} style={inputStyle} placeholder="New Password (leave blank to keep)" type="password" />
-              <input name="email" value={editUser.email || ''} onChange={handleEditChange} style={inputStyle} placeholder="Email" />
-              <input name="phone" value={editUser.phone || ''} onChange={handleEditChange} style={inputStyle} placeholder="Phone" />
-              <input name="address" value={editUser.address || ''} onChange={handleEditChange} style={inputStyle} placeholder="Address" />
+              <select name="location" value={editUser.location} onChange={handleEditChange} style={inputStyle}>
+                <option value="">Select Location</option>
+                {locations.map(loc => (
+                  <option key={loc._id} value={loc._id}>{loc.name}</option>
+                ))}
+              </select>
+
               <label style={{ display: 'block', margin: '8px 0' }}>
                 <input type="checkbox" name="isAdmin" checked={editUser.isAdmin} onChange={handleEditChange} /> Admin
               </label>
-              <div style={{ margin: '8px 0' }}>
-                <label>Profile Picture: <input type="file" accept="image/*" onChange={e => setEditProfilePic(e.target.files[0])} /></label>
-              </div>
-              <div style={{ margin: '8px 0' }}>
-                <label>ID Document Images: <input type="file" accept="image/*" multiple onChange={e => setEditIdDocs(e.target.files)} /></label>
-              </div>
               <button style={{ ...btnStyle, marginTop: 8 }} onClick={handleSaveEdit}>Save</button>
               <button style={{ ...btnStyle, background: '#888', marginTop: 8 }} onClick={() => setEditMode(false)}>Cancel</button>
             </>
@@ -500,4 +597,26 @@ const editInputStyle = {
   borderRadius: 4,
   border: '1px solid #ccc',
   marginTop: 4,
+};
+
+const modalOverlayStyle = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  background: 'rgba(0, 0, 0, 0.7)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 1000,
+};
+
+const modalContentStyle = {
+  background: '#fff',
+  padding: '20px',
+  borderRadius: '8px',
+  width: '90%',
+  maxWidth: '500px',
+  color: '#333',
 }; 

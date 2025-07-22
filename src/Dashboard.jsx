@@ -419,6 +419,12 @@ export default function Dashboard({ user }) {
           End Work
         </button>
       </div>
+      
+      {user.location && (
+        <div style={{...summaryStyle, textAlign: 'center', marginTop: 16, fontWeight: 600 }}>
+          Location: {user.location.name}
+        </div>
+      )}
 
       <div style={{ marginTop: 24, fontSize: 16 }}>
         <div style={cardStyle}>

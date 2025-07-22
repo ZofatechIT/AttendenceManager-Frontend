@@ -13,16 +13,28 @@ export default function Login() {
     try {
       const res = await fetch('https://attendencemanager-backend.onrender.com/api/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ employeeId, password }),
       });
+      
+      // Check if response is JSON
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server returned non-JSON response");
+      }
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Login failed');
+      
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       window.location.href = '/dashboard';
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Failed to connect to server');
+      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }

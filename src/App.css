@@ -1,23 +1,8 @@
-html, body {
-  width: 100vw;
-  min-height: 100vh;
-  background: #fff !important;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 #root {
-  width: 100vw;
-  min-height: 100vh;
-  background: #fff !important;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body, html {
-  color: #000 !important;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
 }
 
 .logo {
@@ -161,7 +146,7 @@ body, html {
 .user-id {
   font-size: 0.9rem;
   color: #6c757d;
-  }
+}
 
 .user-actions {
   display: flex;
@@ -183,57 +168,4 @@ body, html {
   margin-top: 1.5rem;
   border: 1px solid transparent;
   border-radius: 0.25rem;
-}
-
-.login-bg {
-  width: 100vw;
-  height: 100vh;
-  min-height: 100vh;
-  min-width: 100vw;
-  background: #fff;
-  padding: 0;
-  margin: 0;
-  display: block;
-}
-
-.login-form {
-  width: 100vw;
-  height: 100vh;
-  min-height: 100vh;
-  min-width: 100vw;
-  background: #fff;
-  border-radius: 0;
-  box-shadow: none;
-  padding: 2.5rem 1rem 1rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-  justify-content: center;
-  align-items: center;
-}
-
-.login-form h2 {
-  margin-top: 2rem;
-  margin-bottom: 2rem;
-}
-
-.login-form label, .login-form input, .login-form button {
-  width: 100%;
-  max-width: 400px;
-}
-
-@media (max-width: 600px) {
-  .login-form {
-    max-width: 98vw;
-    min-width: 0;
-    padding: 1.5rem 0.5rem;
-    border-radius: 0;
-  }
-  .login-bg {
-    padding: 0;
-    min-width: 120vw;
-  }
-  body, html {
-    color: #000 !important;
-  }
 }
