@@ -28,6 +28,8 @@ export default function Dashboard({ user }) {
     window.location.href = '/';
   };
 
+  // console.log(token)
+
   // Helper to get and update location
   const updateLocation = (send = false) => {
     if (navigator.geolocation) {
@@ -227,6 +229,7 @@ export default function Dashboard({ user }) {
     async function fetchAttendance() {
       try {
         const res = await fetch('https://attendencemanager-backend.onrender.com/api/attendance', {
+           method: 'GET',
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
@@ -252,8 +255,8 @@ export default function Dashboard({ user }) {
         if (att.totalHours) setTotalHours(att.totalHours.toFixed(2));
       } catch {}
     }
-    fetchAttendance();
     // eslint-disable-next-line
+    fetchAttendance();
   }, []);
 
   useEffect(() => {

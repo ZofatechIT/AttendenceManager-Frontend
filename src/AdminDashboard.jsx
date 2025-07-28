@@ -19,7 +19,23 @@ export default function AdminDashboard() {
   const [locations, setLocations] = useState([]);
   const [newLocation, setNewLocation] = useState('');
   const [showLocationManager, setShowLocationManager] = useState(false);
+  const [jobPosts, setJobPosts] = useState([]);
+const [showJobPostManager, setShowJobPostManager] = useState(false);
+  const [newJobPost, setNewJobPost] = useState('');
   const token = localStorage.getItem('token');
+
+  // Move fetchJobPosts to top-level so it can be used by handlers
+  async function fetchJobPosts() {
+    try {
+      const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/jobPost', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch job posts');
+      setJobPosts(await res.json());
+    } catch (err) {
+      console.error('Failed to fetch job posts:', err);
+    }
+  }
 
   useEffect(() => {
     async function fetchUsers() {
@@ -49,8 +65,41 @@ export default function AdminDashboard() {
     }
     fetchUsers();
     fetchLocations();
-    // eslint-disable-next-line
+    fetchJobPosts();
   }, []);
+  const handleAddUser = async e => {
+    e.preventDefault();
+    setAdding(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+      if (profilePic) formData.append('profilePic', profilePic);
+      if (idDocs && idDocs.length > 0) {
+        Array.from(idDocs).forEach(file => formData.append('idDocs', file));
+      }
+      const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/add-user', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error((await res.json()).message || 'Failed to add user');
+      setForm({ employeeId: '', password: '', name: '', isAdmin: false, email: '', phone: '', address: '', location: '' });
+      setProfilePic(null);
+      setIdDocs([]);
+      // Refresh users is handled inside handleAddUser
+      const usersRes = await fetch('https://attendencemanager-backend.onrender.com/api/admin/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(await usersRes.json());
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target;
@@ -100,38 +149,139 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAddUser = async e => {
-    e.preventDefault();
-    setAdding(true);
-    setError('');
-    try {
-      const token = localStorage.getItem('token');
-      const formData = new FormData();
-      Object.entries(form).forEach(([key, value]) => formData.append(key, value));
-      if (profilePic) formData.append('profilePic', profilePic);
-      if (idDocs && idDocs.length > 0) {
-        Array.from(idDocs).forEach(file => formData.append('idDocs', file));
-      }
-      const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/add-user', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      if (!res.ok) throw new Error((await res.json()).message || 'Failed to add user');
-      setForm({ employeeId: '', password: '', name: '', isAdmin: false, email: '', phone: '', address: '', location: '' });
-      setProfilePic(null);
-      setIdDocs([]);
-      // Refresh users
-      const usersRes = await fetch('https://attendencemanager-backend.onrender.com/api/admin/users', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUsers(await usersRes.json());
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setAdding(false);
+  // Job Post Handlers
+const handleAddJobPost = async () => {
+  if (!newJobPost.trim()) return;
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/add-jobPost`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ name: newJobPost }),
+    });
+    if (res.ok) {
+      setNewJobPost('');
+      fetchJobPosts(); // Refresh
     }
-  };
+  } catch (err) {
+    console.error('Error adding job post:', err);
+  }
+};
+
+const handleDeleteJobPost = async (id) => {
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/delete-jobPost/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      fetchJobPosts(); // Refresh
+    }
+  } catch (err) {
+    console.error('Error deleting job post:', err);
+  }
+};
+
+// const handleAddJobPost = () => {
+//   if (!newJobPost.trim()) return;
+//   setJobPosts([...jobPosts, newJobPost]);
+//   setNewJobPost('');
+// };
+
+
+  // job post 
+
+  //   async function fetchJobPost() {
+  //     try {
+  //       const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/locations', {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
+  //       if (!res.ok) throw new Error('Failed to fetch locations');
+  //       setJobPost(await res.json());
+  //     } catch (err) {
+  //       console.error('Failed to fetch locations:', err);
+  //     }
+  //   }
+  //   // fetchUsers();
+  //   fetchJobPost();
+  //   // eslint-disable-next-line
+  // }. [];
+  // const handleChange = e => {
+  //   const { name, value, type, checked } = e.target;
+  //   setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
+  // };
+
+  // const handleAddNewJobPost = async () => {
+  //   if (!NewJobPost.trim()) return;
+  //   try {
+  //     const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/add-location', {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+  //       body: JSON.stringify({ name: NewJobPost }),
+  //     });
+  //     if (!res.ok) throw new Error((await res.json()).message || 'Failed to add location');
+  //     setNewJobPost('');
+  //     // Refresh locations
+  //     const locationsRes = await fetch('https://attendencemanager-backend.onrender.com/api/admin/locations', {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     setJobPost(await locationsRes.json());
+  //   } catch (err) {
+  //     setError(err.message);
+  //   }
+  // };
+
+  // const handleDeleteJobPost = async (JobPostId) => {
+  //   if (!window.confirm('Are you sure you want to delete this location? This will remove it from all users.')) return;
+  //   try {
+  //     const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/delete-location/${locationId}`, {
+  //       method: 'DELETE',
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     if (!res.ok) throw new Error((await res.json()).message || 'Failed to delete location');
+  //     // Refresh locations
+  //     const JobPostsRes = await fetch('https://attendencemanager-backend.onrender.com/api/admin/locations', {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     setJobPost(await JobPostsRes.json());
+  //     // Also refresh users in case their location was unset
+  //     const usersRes = await fetch('https://attendencemanager-backend.onrender.com/api/admin/users', {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     setUsers(await usersRes.json());
+  //   } catch (err) {
+  //     setError(err.message);
+  //   }
+  // };
+
+  // const handleAddUser = async e => {
+  //   e.preventDefault();
+  //   setAdding(true);
+  //   setError('');
+  //   try {
+  //     const token = localStorage.getItem('token');
+  //     const formData = new FormData();
+  //     Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+  //     if (profilePic) formData.append('profilePic', profilePic);
+  //     if (idDocs && idDocs.length > 0) {
+  //       Array.from(idDocs).forEach(file => formData.append('idDocs', file));
+  //     }
+  //     const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/add-user', {
+  //       method: 'POST',
+  //       headers: { Authorization: `Bearer ${token}` },
+  //       body: formData,
+  //     });
+  //     if (!res.ok) throw new Error((await res.json()).message || 'Failed to add user');
+  //     setForm({ employeeId: '', password: '', name: '', isAdmin: false, email: '', phone: '', address: '', location: '' });
+  //     setProfilePic(null);
+  //     setIdDocs([]);
+
+  // Refresh users is handled inside handleAddUser
+
 
   const handleManageUsers = () => {
     setManageMode(true);
@@ -178,7 +328,12 @@ export default function AdminDashboard() {
   const handleSaveEdit = async () => {
     setError('');
     try {
-      const body = { name: editUser.name, isAdmin: editUser.isAdmin, employeeId: editUser.employeeId };
+      const body = {
+        name: editUser.name,
+        isAdmin: editUser.isAdmin,
+        employeeId: editUser.employeeId,
+        jobPost: editUser.jobPost, // Add this
+      };
       if (editUser.password) body.password = editUser.password;
       if (editUser.location) body.location = editUser.location;
 
@@ -261,7 +416,7 @@ export default function AdminDashboard() {
       endTime: toInputFormat(record.endTime),
     });
   };
-  
+
   const handleCancelEditRecord = () => {
     setEditingRecordId(null);
     setEditRecordData(null);
@@ -284,7 +439,7 @@ export default function AdminDashboard() {
         lunchEndTime: toISO(editRecordData.lunchEndTime),
         endTime: toISO(editRecordData.endTime),
       };
-      
+
       const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/attendance/record/${recordId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -292,7 +447,7 @@ export default function AdminDashboard() {
       });
 
       if (!res.ok) throw new Error((await res.json()).message || 'Failed to update record');
-      
+
       // Refresh attendance list
       handleSelectUser(selectedUser);
       setEditingRecordId(null);
@@ -340,13 +495,64 @@ export default function AdminDashboard() {
     );
   }
 
+  // Job Post Manager modal (make UI match Location Manager)
+  if (showJobPostManager) {
+    return (
+      <div style={modalOverlayStyle}>
+        <div style={modalContentStyle}>
+          <h2>Manage Job Posts</h2>
+          <div style={{ margin: '16px 0' }}>
+            {jobPosts.map(post => (
+              <div key={post._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px', borderBottom: '1px solid #eee' }}>
+                <span>{post.name}</span>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteJobPost(post._id)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'red',
+                    cursor: 'pointer',
+                    fontSize: 20,
+                    width: 24,
+                    height: 24,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 0,
+                    lineHeight: 1,
+                  }}
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8, margin: '16px 0' }}>
+            <input
+              type="text"
+              placeholder="New Job Post"
+              value={newJobPost}
+              onChange={e => setNewJobPost(e.target.value)}
+              style={{ ...inputStyle, flexGrow: 1 }}
+            />
+            <button type="button" onClick={handleAddJobPost} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14, background: '#17a2b8' }}>Add</button>
+          </div>
+          {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
+          <button style={{ ...btnStyle, background: '#888', marginTop: 16 }} onClick={() => setShowJobPostManager(false)}>Close</button>
+        </div>
+      </div>
+    );
+  }
+
+
   if (!manageMode) {
     return (
       <div style={containerStyle}>
         <h2 style={headerStyle}>Admin Dashboard</h2>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-          <button 
-            onClick={() => window.location.href = '/'} 
+          <button
+            onClick={() => window.location.href = '/'}
             style={{ ...btnStyle, width: 'auto', padding: '8px 16px', fontSize: 14, background: '#28a745', marginRight: 8 }}
           >
             Home
@@ -365,14 +571,24 @@ export default function AdminDashboard() {
           <input name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} style={inputStyle} />
           <input name="address" placeholder="Address" value={form.address} onChange={handleChange} style={inputStyle} />
 
-          <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-            <select name="location" value={form.location} onChange={handleChange} style={{...inputStyle, flexGrow: 1}}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <select name="location" value={form.location} onChange={handleChange} style={{ ...inputStyle, flexGrow: 1 }}>
               <option value="">Select Location</option>
               {locations.map(loc => (
                 <option key={loc._id} value={loc._id}>{loc.name}</option>
               ))}
             </select>
             <button type="button" onClick={() => setShowLocationManager(true)} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14 }}>Manage</button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <select name="jobPost" value={form.jobPost} onChange={handleChange} style={{ ...inputStyle, flexGrow: 1 }}>
+              <option value="">Select Job Post</option>
+              {jobPosts.map(post => (
+                <option key={post._id} value={post._id}>{post.name}</option>
+              ))}
+            </select>
+              <button type="button" onClick={() => setShowJobPostManager(true)} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14 }}>Manage</button>
+            {/* Optional Job Post Manager button here */}
           </div>
           <label style={{ display: 'block', margin: '8px 0' }}>
             <input type="checkbox" name="isAdmin" checked={form.isAdmin} onChange={handleChange} /> Admin
@@ -429,7 +645,7 @@ export default function AdminDashboard() {
         {error && <div className="error-message">{error}</div>}
       </div>
     );
-  }
+  };
 
   // User details page
   if (manageMode && selectedUser) {
@@ -470,7 +686,12 @@ export default function AdminDashboard() {
                   <option key={loc._id} value={loc._id}>{loc.name}</option>
                 ))}
               </select>
-
+              <select name="jobPost" value={editUser.jobPost} onChange={handleEditChange} style={inputStyle}>
+                <option value="">Select Job Post</option>
+                {jobPosts.map(post => (
+                  <option key={post._id} value={post._id}>{post.name}</option>
+                ))}
+              </select>
               <label style={{ display: 'block', margin: '8px 0' }}>
                 <input type="checkbox" name="isAdmin" checked={editUser.isAdmin} onChange={handleEditChange} /> Admin
               </label>
@@ -487,33 +708,33 @@ export default function AdminDashboard() {
         {loadingAttendance ? <div>Loading attendance...</div> : (
           <ul style={{ padding: 0, listStyle: 'none' }}>
             {attendance.map((a, i) => (
-              <li key={i} style={{...attendanceCardStyle, background: editingRecordId === a._id ? '#e6f7ff' : '#f7f7ff'}}>
+              <li key={i} style={{ ...attendanceCardStyle, background: editingRecordId === a._id ? '#e6f7ff' : '#f7f7ff' }}>
                 {editingRecordId === a._id ? (
                   <div>
-                    <div style={{fontWeight:'bold', marginBottom:8}}>Editing Record for {a.date}</div>
+                    <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Editing Record for {a.date}</div>
                     <label style={editLabelStyle}>Start Time</label>
-                    <input type="datetime-local" name="startTime" value={editRecordData.startTime} onChange={handleRecordInputChange} style={editInputStyle}/>
+                    <input type="datetime-local" name="startTime" value={editRecordData.startTime} onChange={handleRecordInputChange} style={editInputStyle} />
                     <label style={editLabelStyle}>Lunch Start</label>
-                    <input type="datetime-local" name="lunchStartTime" value={editRecordData.lunchStartTime} onChange={handleRecordInputChange} style={editInputStyle}/>
+                    <input type="datetime-local" name="lunchStartTime" value={editRecordData.lunchStartTime} onChange={handleRecordInputChange} style={editInputStyle} />
                     <label style={editLabelStyle}>Lunch End</label>
-                    <input type="datetime-local" name="lunchEndTime" value={editRecordData.lunchEndTime} onChange={handleRecordInputChange} style={editInputStyle}/>
+                    <input type="datetime-local" name="lunchEndTime" value={editRecordData.lunchEndTime} onChange={handleRecordInputChange} style={editInputStyle} />
                     <label style={editLabelStyle}>End Time</label>
-                    <input type="datetime-local" name="endTime" value={editRecordData.endTime} onChange={handleRecordInputChange} style={editInputStyle}/>
-                    <div style={{marginTop:12}}>
-                      <button style={{...btnStyle, background:'#28a745', width:'auto', padding:'6px 12px', fontSize:14, marginRight:8}} onClick={() => handleSaveRecord(a._id)}>Save</button>
-                      <button style={{...btnStyle, background:'#888', width:'auto', padding:'6px 12px', fontSize:14}} onClick={handleCancelEditRecord}>Cancel</button>
+                    <input type="datetime-local" name="endTime" value={editRecordData.endTime} onChange={handleRecordInputChange} style={editInputStyle} />
+                    <div style={{ marginTop: 12 }}>
+                      <button style={{ ...btnStyle, background: '#28a745', width: 'auto', padding: '6px 12px', fontSize: 14, marginRight: 8 }} onClick={() => handleSaveRecord(a._id)}>Save</button>
+                      <button style={{ ...btnStyle, background: '#888', width: 'auto', padding: '6px 12px', fontSize: 14 }} onClick={handleCancelEditRecord}>Cancel</button>
                     </div>
                   </div>
                 ) : (
                   <>
-                    <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8}}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <div><b>Date:</b> {a.date}</div>
-                      <button style={{...btnStyle, width:'auto', padding:'4px 8px', fontSize:12, background:'#1a1a1a'}} onClick={() => handleEditRecord(a)}>Edit</button>
+                      <button style={{ ...btnStyle, width: 'auto', padding: '4px 8px', fontSize: 12, background: '#1a1a1a' }} onClick={() => handleEditRecord(a)}>Edit</button>
                     </div>
                     <div><b>Day:</b> {a.date ? new Date(a.date).toLocaleDateString(undefined, { weekday: 'long' }) : '--'}</div>
-                    <div><b>Start:</b> {a.startTime ? new Date(a.startTime).toLocaleTimeString() : '--'} <span style={{fontSize:12, color:'#888'}}>{findLocation(a.startTime, a.locations)}</span></div>
-                    <div><b>Lunch:</b> {a.lunchStartTime ? new Date(a.lunchStartTime).toLocaleTimeString() : '--'} <span style={{fontSize:12, color:'#888'}}>{findLocation(a.lunchStartTime, a.locations)}</span> - {a.lunchEndTime ? new Date(a.lunchEndTime).toLocaleTimeString() : '--'} <span style={{fontSize:12, color:'#888'}}>{findLocation(a.lunchEndTime, a.locations)}</span></div>
-                    <div><b>End:</b> {a.endTime ? new Date(a.endTime).toLocaleTimeString() : '--'} <span style={{fontSize:12, color:'#888'}}>{findLocation(a.endTime, a.locations)}</span></div>
+                    <div><b>Start:</b> {a.startTime ? new Date(a.startTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#888' }}>{findLocation(a.startTime, a.locations)}</span></div>
+                    <div><b>Lunch:</b> {a.lunchStartTime ? new Date(a.lunchStartTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#888' }}>{findLocation(a.lunchStartTime, a.locations)}</span> - {a.lunchEndTime ? new Date(a.lunchEndTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#888' }}>{findLocation(a.lunchEndTime, a.locations)}</span></div>
+                    <div><b>End:</b> {a.endTime ? new Date(a.endTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#888' }}>{findLocation(a.endTime, a.locations)}</span></div>
                     <div><b>Total Hours:</b> {a.totalHours ? a.totalHours.toFixed(2) : '--'}</div>
                   </>
                 )}
@@ -524,9 +745,11 @@ export default function AdminDashboard() {
         {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
       </div>
     );
-  }
+  };
 }
 
+// --- Style objects below ---
+// Style objects moved outside the component
 const containerStyle = {
   maxWidth: 420,
   margin: '0 auto',
@@ -598,7 +821,6 @@ const editInputStyle = {
   border: '1px solid #ccc',
   marginTop: 4,
 };
-
 const modalOverlayStyle = {
   position: 'fixed',
   top: 0,
@@ -618,5 +840,14 @@ const modalContentStyle = {
   borderRadius: '8px',
   width: '90%',
   maxWidth: '500px',
-  color: '#333',
-}; 
+  color: '#333'
+};
+const buttonStyle = {
+  padding: "6px 12px",
+  backgroundColor: "#4CAF50",
+  color: "#fff",
+  border: "none",
+  borderRadius: "4px",
+  cursor: "pointer",
+  margin: "0 8px",
+};
