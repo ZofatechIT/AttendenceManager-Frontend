@@ -283,9 +283,23 @@ const handleDeleteJobPost = async (id) => {
   // Refresh users is handled inside handleAddUser
 
 
-  const handleManageUsers = () => {
+  const handleManageUsers = async () => {
     setManageMode(true);
     setSelectedUser(null);
+    // Fetch latest users, locations, and jobPosts
+    try {
+      const token = localStorage.getItem('token');
+      const [usersRes, locationsRes, jobPostsRes] = await Promise.all([
+        fetch('https://attendencemanager-backend.onrender.com/api/admin/users', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('https://attendencemanager-backend.onrender.com/api/admin/locations', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('https://attendencemanager-backend.onrender.com/api/admin/jobPost', { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      if (usersRes.ok) setUsers(await usersRes.json());
+      if (locationsRes.ok) setLocations(await locationsRes.json());
+      if (jobPostsRes.ok) setJobPosts(await jobPostsRes.json());
+    } catch (err) {
+      // Optionally handle error
+    }
   };
 
   const handleBack = () => {
@@ -626,6 +640,11 @@ const handleDeleteJobPost = async (id) => {
                     {u.isAdmin && <span className="admin-tag"> [Admin]</span>}
                   </span>
                   <span className="user-id">ID: {u.employeeId}</span>
+                  {u.jobPost && (
+                    <span className="user-jobpost" style={{ display: 'block', color: '#888', fontSize: 13 }}>
+                      Job Post: {jobPosts.find(j => j._id === u.jobPost)?.name || u.jobPost}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="user-actions">
@@ -662,6 +681,11 @@ const handleDeleteJobPost = async (id) => {
           {selectedUser.phone && <div style={{ fontSize: 14, color: '#888' }}>Phone: {selectedUser.phone}</div>}
           {selectedUser.address && <div style={{ fontSize: 14, color: '#888' }}>Address: {selectedUser.address}</div>}
           {selectedUser.location && <div style={{ fontSize: 14, color: '#888' }}>Location: {locations.find(l => l._id === selectedUser.location)?.name}</div>}
+          {selectedUser.jobPost && (
+            <div style={{ fontSize: 14, color: '#888' }}>
+              Job Post: {jobPosts.find(j => j._id === selectedUser.jobPost)?.name || selectedUser.jobPost}
+            </div>
+          )}
 
           {selectedUser.idDocs && selectedUser.idDocs.length > 0 && (
             <div style={{ marginTop: 10 }}>
