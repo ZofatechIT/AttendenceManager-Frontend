@@ -46,11 +46,11 @@ export default function Login() {
         <h2 style={{ textAlign: 'center', marginBottom: 24 , color : 'black'}}>Employee Login</h2>
         <div style={{ marginBottom: 16 }}>
           <label>Employee ID</label>
-          <input type="text" value={employeeId} onChange={e => setEmployeeId(e.target.value)} required style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginTop: 4 }} />
+          <input type="text" value={employeeId} onChange={e => setEmployeeId(e.target.value)} required style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginTop: 4 ,  color : 'black'}} />
         </div>
         <div style={{ marginBottom: 16 }}>
           <label>Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginTop: 4 }} />
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginTop: 4 ,  color : 'black'}} />
         </div>
         {error && <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>}
         <button type="submit" style={{ width: '100%', padding: 10, borderRadius: 6, background: '#646cff', color: '#fff', border: 'none', fontWeight: 600 }} disabled={loading}>
