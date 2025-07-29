@@ -43,7 +43,7 @@ export default function Login() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
       <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 350, background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: 24 }}>Employee Login</h2>
+        <h2 style={{ textAlign: 'center', marginBottom: 24 , color : 'black'}}>Employee Login</h2>
         <div style={{ marginBottom: 16 }}>
           <label>Employee ID</label>
           <input type="text" value={employeeId} onChange={e => setEmployeeId(e.target.value)} required style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginTop: 4 }} />
