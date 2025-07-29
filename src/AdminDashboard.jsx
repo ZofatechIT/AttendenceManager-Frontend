@@ -631,7 +631,7 @@ const handleDeleteJobPost = async (id) => {
         </button>
         <div className="users-list">
           {users.map(u => (
-            <div className="user-card" key={u._id}>
+            <div className="user-card" key={u._id}style={{ color: 'black'}}>
               <div className="user-info">
                 {u.profilePic && <img src={u.profilePic} alt="Profile" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', marginRight: 10 }} />}
                 <div>
@@ -717,7 +717,7 @@ const handleDeleteJobPost = async (id) => {
                 ))}
               </select>
               <label style={{ display: 'block', margin: '8px 0' }}>
-                <input type="checkbox" name="isAdmin" checked={editUser.isAdmin} onChange={handleEditChange} /> Admin
+                <input type="checkbox" name="isAdmin" checked={editUser.isAdmin} onChange={handleEditChange} style={{ color: 'black'}} /> Admin
               </label>
               <button style={{ ...btnStyle, marginTop: 8 }} onClick={handleSaveEdit}>Save</button>
               <button style={{ ...btnStyle, background: '#888', marginTop: 8 }} onClick={() => setEditMode(false)}>Cancel</button>
