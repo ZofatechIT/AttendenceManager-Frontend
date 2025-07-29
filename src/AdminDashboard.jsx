@@ -637,9 +637,9 @@ const handleDeleteJobPost = async (id) => {
                 <div>
                   <span className="user-name">
                     {u.name || u.employeeId}
-                    {u.isAdmin && <span className="admin-tag"> [Admin]</span>}
+                    {u.isAdmin && <span className="admin-tag" style={{ color: 'black'}}> [Admin]</span>}
                   </span>
-                  <span className="user-id">ID: {u.employeeId}</span>
+                  <span className="user-id"style={{ color: 'black'}}>ID: {u.employeeId}</span>
                   {u.jobPost && (
                     <span className="user-jobpost" style={{ display: 'block', color: '#888', fontSize: 13 }}>
                       Job Post: {jobPosts.find(j => j._id === u.jobPost)?.name || u.jobPost}
