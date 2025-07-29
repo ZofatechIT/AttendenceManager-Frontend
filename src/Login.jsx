@@ -45,11 +45,11 @@ export default function Login() {
       <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 350, background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <h2 style={{ textAlign: 'center', marginBottom: 24 , color : 'black'}}>Employee Login</h2>
         <div style={{ marginBottom: 16 }}>
-          <label>Employee ID</label>
+          <label style={{ color: 'black'}}>Employee ID</label>
           <input type="text" value={employeeId} onChange={e => setEmployeeId(e.target.value)} required style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginTop: 4 ,  color : 'black'}} />
         </div>
         <div style={{ marginBottom: 16 }}>
-          <label>Password</label>
+          <label style={{ color: 'black'}}>Password</label>
           <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginTop: 4 ,  color : 'black'}} />
         </div>
         {error && <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>}

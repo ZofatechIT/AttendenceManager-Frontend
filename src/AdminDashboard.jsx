@@ -573,7 +573,7 @@ const handleDeleteJobPost = async (id) => {
           </button>
         </div>
         <form onSubmit={handleAddUser} style={formStyle} encType="multipart/form-data">
-          <h4>Add User</h4>
+          <h4 style={{ color: 'black'}}>Add User</h4>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <input name="employeeId" placeholder="Employee ID (manual or generate)" value={form.employeeId} onChange={handleChange} required style={inputStyle} />
             <button type="button" onClick={handleGenerateId} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14, background: '#28a745' }}>Generate</button>
