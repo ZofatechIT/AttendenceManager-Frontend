@@ -608,10 +608,10 @@ const handleDeleteJobPost = async (id) => {
             <input type="checkbox" name="isAdmin" checked={form.isAdmin} onChange={handleChange} /> Admin
           </label>
           <div style={{ margin: '8px 0' }}>
-            <label>Profile Picture: <input type="file" accept="image/*" onChange={e => setProfilePic(e.target.files[0])} /></label>
+            <label style={{ color: 'black'}}>Profile Picture: <input type="file" accept="image/*" onChange={e => setProfilePic(e.target.files[0])} /></label>
           </div>
           <div style={{ margin: '8px 0' }}>
-            <label>ID Document Images: <input type="file" accept="image/*" multiple onChange={e => setIdDocs(e.target.files)} /></label>
+            <label style={{ color: 'black'}}>ID Document Images: <input type="file" accept="image/*" multiple onChange={e => setIdDocs(e.target.files)} /></label>
           </div>
           <button type="submit" style={btnStyle} disabled={adding}>{adding ? 'Adding...' : 'Add User'}</button>
         </form>
@@ -626,7 +626,7 @@ const handleDeleteJobPost = async (id) => {
     return (
       <div className="admin-container">
         <h2>Manage Users</h2>
-        <button onClick={handleBack} className="btn btn-secondary">
+        <button onClick={handleBack} className="btn btn-secondary" style={{ color: 'black'}}>
           Back
         </button>
         <div className="users-list">
@@ -635,11 +635,11 @@ const handleDeleteJobPost = async (id) => {
               <div className="user-info">
                 {u.profilePic && <img src={u.profilePic} alt="Profile" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', marginRight: 10 }} />}
                 <div>
-                  <span className="user-name">
+                  <span className="user-name" style={{ color: 'black'}}>
                     {u.name || u.employeeId}
                     {u.isAdmin && <span className="admin-tag"> [Admin]</span>}
                   </span>
-                  <span className="user-id">ID: {u.employeeId}</span>
+                  <span className="user-id">ID: {u.employeeId} style={{ color: 'black'}}</span>
                   {u.jobPost && (
                     <span className="user-jobpost" style={{ display: 'block', color: '#888', fontSize: 13 }}>
                       Job Post: {jobPosts.find(j => j._id === u.jobPost)?.name || u.jobPost}
