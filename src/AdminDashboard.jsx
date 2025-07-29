@@ -626,7 +626,7 @@ const handleDeleteJobPost = async (id) => {
     return (
       <div className="admin-container">
         <h2>Manage Users</h2>
-        <button onClick={handleBack} className="btn btn-secondary" style={{ color: 'black'}}>
+        <button onClick={handleBack} className="btn btn-secondary" >
           Back
         </button>
         <div className="users-list">
@@ -635,11 +635,11 @@ const handleDeleteJobPost = async (id) => {
               <div className="user-info">
                 {u.profilePic && <img src={u.profilePic} alt="Profile" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', marginRight: 10 }} />}
                 <div>
-                  <span className="user-name" style={{ color: 'black'}}>
+                  <span className="user-name">
                     {u.name || u.employeeId}
                     {u.isAdmin && <span className="admin-tag"> [Admin]</span>}
                   </span>
-                  <span className="user-id">ID: {u.employeeId} style={{ color: 'black'}}</span>
+                  <span className="user-id">ID: {u.employeeId}</span>
                   {u.jobPost && (
                     <span className="user-jobpost" style={{ display: 'block', color: '#888', fontSize: 13 }}>
                       Job Post: {jobPosts.find(j => j._id === u.jobPost)?.name || u.jobPost}
