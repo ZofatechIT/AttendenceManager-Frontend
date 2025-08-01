@@ -20,8 +20,19 @@ export default function AdminDashboard() {
   const [newLocation, setNewLocation] = useState('');
   const [showLocationManager, setShowLocationManager] = useState(false);
   const [jobPosts, setJobPosts] = useState([]);
-const [showJobPostManager, setShowJobPostManager] = useState(false);
+  const [showJobPostManager, setShowJobPostManager] = useState(false);
   const [newJobPost, setNewJobPost] = useState('');
+  const [showReports, setShowReports] = useState(false);
+  const [reports, setReports] = useState([]);
+  const [loadingReports, setLoadingReports] = useState(false);
+  const [problemCount, setProblemCount] = useState(0);
+  const [reportFilters, setReportFilters] = useState({
+    startDate: '',
+    endDate: '',
+    type: 'all',
+    userId: '',
+    page: 1
+  });
   const token = localStorage.getItem('token');
 
   // Move fetchJobPosts to top-level so it can be used by handlers
@@ -63,9 +74,23 @@ const [showJobPostManager, setShowJobPostManager] = useState(false);
         console.error('Failed to fetch locations:', err);
       }
     }
+    async function fetchProblemCount() {
+      try {
+        const res = await fetch('https://attendencemanager-backend.onrender.com/api/admin/reports/count', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setProblemCount(data.problemCount);
+        }
+      } catch (err) {
+        console.error('Failed to fetch problem count:', err);
+      }
+    }
     fetchUsers();
     fetchLocations();
     fetchJobPosts();
+    fetchProblemCount();
   }, []);
   const handleAddUser = async e => {
     e.preventDefault();
@@ -184,6 +209,44 @@ const handleDeleteJobPost = async (id) => {
   } catch (err) {
     console.error('Error deleting job post:', err);
   }
+};
+
+const fetchReports = async () => {
+  setLoadingReports(true);
+  try {
+    const params = new URLSearchParams();
+    if (reportFilters.startDate) params.append('startDate', reportFilters.startDate);
+    if (reportFilters.endDate) params.append('endDate', reportFilters.endDate);
+    if (reportFilters.type !== 'all') params.append('type', reportFilters.type);
+    if (reportFilters.userId) params.append('userId', reportFilters.userId);
+    params.append('page', reportFilters.page);
+    params.append('limit', 20);
+
+    const res = await fetch(`https://attendencemanager-backend.onrender.com/api/admin/reports?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Failed to fetch reports');
+    const data = await res.json();
+    setReports(data.reports);
+  } catch (err) {
+    console.error('Failed to fetch reports:', err);
+  } finally {
+    setLoadingReports(false);
+  }
+};
+
+const handleViewReports = () => {
+  setShowReports(true);
+  setProblemCount(0); // Remove notification dot when reports are opened
+  fetchReports();
+};
+
+const handleReportFilterChange = (key, value) => {
+  setReportFilters(prev => ({ ...prev, [key]: value, page: 1 }));
+};
+
+const handleApplyFilters = () => {
+  fetchReports();
 };
 
 // const handleAddJobPost = () => {
@@ -559,6 +622,172 @@ const handleDeleteJobPost = async (id) => {
     );
   }
 
+  // Reports view
+  if (showReports) {
+    return (
+      <div style={modalOverlayStyle}>
+        <div style={{...modalContentStyle, maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto'}}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2>View Reports</h2>
+            <button 
+              onClick={() => setShowReports(false)}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: 24,
+                cursor: 'pointer',
+                color: '#666'
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Filters */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: 12, 
+            marginBottom: 20,
+            padding: 16,
+            background: '#f8f9fa',
+            borderRadius: 8
+          }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Start Date</label>
+              <input
+                type="date"
+                value={reportFilters.startDate}
+                onChange={(e) => handleReportFilterChange('startDate', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>End Date</label>
+              <input
+                type="date"
+                value={reportFilters.endDate}
+                onChange={(e) => handleReportFilterChange('endDate', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Type</label>
+              <select
+                value={reportFilters.type}
+                onChange={(e) => handleReportFilterChange('type', e.target.value)}
+                style={inputStyle}
+              >
+                <option value="all">All Reports</option>
+                <option value="all_ok">All OK</option>
+                <option value="problem">Problem Reports</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>User</label>
+              <select
+                value={reportFilters.userId}
+                onChange={(e) => handleReportFilterChange('userId', e.target.value)}
+                style={inputStyle}
+              >
+                <option value="">All Users</option>
+                {users.map(user => (
+                  <option key={user._id} value={user.employeeId}>
+                    {user.name || user.employeeId}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'end' }}>
+              <button
+                onClick={handleApplyFilters}
+                style={{...btnStyle, width: 'auto', padding: '8px 16px'}}
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+
+          {/* Reports List */}
+          {loadingReports ? (
+            <div style={{ textAlign: 'center', padding: 40 }}>Loading reports...</div>
+          ) : reports.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 40, color: '#666' }}>No reports found</div>
+          ) : (
+            <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              {reports.map(report => (
+                <div key={report._id} style={{
+                  border: '1px solid #ddd',
+                  borderRadius: 8,
+                  padding: 16,
+                  marginBottom: 12,
+                  background: report.type === 'problem' ? '#fff5f5' : '#f8fff8'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div>
+                      <span style={{
+                        padding: '4px 8px',
+                        borderRadius: 4,
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                        background: report.type === 'problem' ? '#dc3545' : '#28a745',
+                        color: '#fff'
+                      }}>
+                        {report.type === 'problem' ? 'Problem' : 'All OK'}
+                      </span>
+                      <span style={{ marginLeft: 8, fontSize: 14, color: '#666' }}>
+                        by {report.userId?.name || report.userId?.employeeId}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#666' }}>
+                      {new Date(report.createdAt).toLocaleDateString()} at {report.time}
+                    </div>
+                  </div>
+                  
+                  {report.location && (
+                    <div style={{ marginBottom: 8, fontSize: 14, color: '#666' }}>
+                      <strong>Location:</strong> {report.location}
+                    </div>
+                  )}
+                  
+                  <div style={{ marginBottom: 8 }}>
+                    <strong>Message:</strong>
+                    <div style={{ marginTop: 4, padding: 8, background: '#f8f9fa', borderRadius: 4 }}>
+                      {report.message}
+                    </div>
+                  </div>
+
+                  {report.pictures && report.pictures.length > 0 && (
+                    <div style={{ marginTop: 12 }}>
+                      <strong>Pictures:</strong>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                        {report.pictures.map((url, idx) => (
+                          <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                            <img 
+                              src={url} 
+                              alt={`Report ${idx + 1}`} 
+                              style={{ 
+                                width: 80, 
+                                height: 80, 
+                                objectFit: 'cover', 
+                                borderRadius: 4,
+                                border: '1px solid #ddd'
+                              }} 
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
 
   if (!manageMode) {
     return (
@@ -616,6 +845,36 @@ const handleDeleteJobPost = async (id) => {
           <button type="submit" style={btnStyle} disabled={adding}>{adding ? 'Adding...' : 'Add User'}</button>
         </form>
         <button style={{ ...btnStyle, background: '#1a1a1a', marginTop: 16 }} onClick={handleManageUsers}>Manage Users</button>
+        <button 
+          style={{ 
+            ...btnStyle, 
+            background: '#17a2b8', 
+            marginTop: 16,
+            position: 'relative'
+          }} 
+          onClick={handleViewReports}
+        >
+          View Reports
+          {problemCount > 0 && (
+            <span style={{
+              position: 'absolute',
+              top: -8,
+              right: -8,
+              background: '#dc3545',
+              color: '#fff',
+              borderRadius: '50%',
+              width: 24,
+              height: 24,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 12,
+              fontWeight: 'bold'
+            }}>
+              {problemCount > 99 ? '99+' : problemCount}
+            </span>
+          )}
+        </button>
         {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
       </div>
     );
@@ -631,17 +890,17 @@ const handleDeleteJobPost = async (id) => {
         </button>
         <div className="users-list">
           {users.map(u => (
-            <div className="user-card" key={u._id}style={{ color: 'black'}}>
+            <div className="user-card" key={u._id}>
               <div className="user-info">
                 {u.profilePic && <img src={u.profilePic} alt="Profile" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', marginRight: 10 }} />}
                 <div>
                   <span className="user-name">
                     {u.name || u.employeeId}
-                    {u.isAdmin && <span className="admin-tag" style={{ color: 'black'}}> [Admin]</span>}
+                    {u.isAdmin && <span className="admin-tag"> [Admin]</span>}
                   </span>
-                  <span className="user-id"style={{ color: 'black'}}>ID: {u.employeeId}</span>
+                  <span className="user-id">ID: {u.employeeId}</span>
                   {u.jobPost && (
-                    <span className="user-jobpost" style={{ display: 'block', color: '#888', fontSize: 13 }}>
+                    <span className="user-jobpost" style={{ display: 'block', color: '#666666', fontSize: 13 }}>
                       Job Post: {jobPosts.find(j => j._id === u.jobPost)?.name || u.jobPost}
                     </span>
                   )}
@@ -675,21 +934,21 @@ const handleDeleteJobPost = async (id) => {
           {selectedUser.profilePic && (
             <img src={selectedUser.profilePic} alt="Profile" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: 8 }} />
           )}
-          <div style={{ fontWeight: 700, fontSize: 18 }}>{selectedUser.name || selectedUser.employeeId}</div>
-          <div style={{ fontSize: 14, color: '#888' }}>ID: {selectedUser.employeeId}</div>
-          {selectedUser.email && <div style={{ fontSize: 14, color: '#888' }}>Email: {selectedUser.email}</div>}
-          {selectedUser.phone && <div style={{ fontSize: 14, color: '#888' }}>Phone: {selectedUser.phone}</div>}
-          {selectedUser.address && <div style={{ fontSize: 14, color: '#888' }}>Address: {selectedUser.address}</div>}
-          {selectedUser.location && <div style={{ fontSize: 14, color: '#888' }}>Location: {locations.find(l => l._id === selectedUser.location)?.name}</div>}
+          <div style={{ fontWeight: 700, fontSize: 18, color: '#333333' }}>{selectedUser.name || selectedUser.employeeId}</div>
+          <div style={{ fontSize: 14, color: '#666666' }}>ID: {selectedUser.employeeId}</div>
+          {selectedUser.email && <div style={{ fontSize: 14, color: '#666666' }}>Email: {selectedUser.email}</div>}
+          {selectedUser.phone && <div style={{ fontSize: 14, color: '#666666' }}>Phone: {selectedUser.phone}</div>}
+          {selectedUser.address && <div style={{ fontSize: 14, color: '#666666' }}>Address: {selectedUser.address}</div>}
+          {selectedUser.location && <div style={{ fontSize: 14, color: '#666666' }}>Location: {locations.find(l => l._id === selectedUser.location)?.name}</div>}
           {selectedUser.jobPost && (
-            <div style={{ fontSize: 14, color: '#888' }}>
+            <div style={{ fontSize: 14, color: '#666666' }}>
               Job Post: {jobPosts.find(j => j._id === selectedUser.jobPost)?.name || selectedUser.jobPost}
             </div>
           )}
 
           {selectedUser.idDocs && selectedUser.idDocs.length > 0 && (
             <div style={{ marginTop: 10 }}>
-              <div style={{ fontWeight: 600, marginBottom: 4 }}>ID Documents:</div>
+              <div style={{ fontWeight: 600, marginBottom: 4, color: '#333333' }}>ID Documents:</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
                 {selectedUser.idDocs.map((url, idx) => (
                   <a href={url} target="_blank" rel="noopener noreferrer" key={idx}>
@@ -716,8 +975,8 @@ const handleDeleteJobPost = async (id) => {
                   <option key={post._id} value={post._id}>{post.name}</option>
                 ))}
               </select>
-              <label style={{ display: 'block', margin: '8px 0' }}>
-                <input type="checkbox" name="isAdmin" checked={editUser.isAdmin} onChange={handleEditChange} style={{ color: 'black'}} /> Admin
+              <label style={{ display: 'block', margin: '8px 0', color: '#333333' }}>
+                <input type="checkbox" name="isAdmin" checked={editUser.isAdmin} onChange={handleEditChange} /> Admin
               </label>
               <button style={{ ...btnStyle, marginTop: 8 }} onClick={handleSaveEdit}>Save</button>
               <button style={{ ...btnStyle, background: '#888', marginTop: 8 }} onClick={() => setEditMode(false)}>Cancel</button>
@@ -728,11 +987,11 @@ const handleDeleteJobPost = async (id) => {
             </>
           )}
         </div>
-        <h4>Attendance Records</h4>
-        {loadingAttendance ? <div>Loading attendance...</div> : (
+        <h4 style={{ color: '#333333' }}>Attendance Records</h4>
+        {loadingAttendance ? <div style={{ color: '#333333' }}>Loading attendance...</div> : (
           <ul style={{ padding: 0, listStyle: 'none' }}>
             {attendance.map((a, i) => (
-              <li key={i} style={{ ...attendanceCardStyle, background: editingRecordId === a._id ? '#e6f7ff' : '#f7f7ff' }}>
+              <li key={i} style={{ ...attendanceCardStyle, background: editingRecordId === a._id ? '#f8f9fa' : '#ffffff', color: '#333333' }}>
                 {editingRecordId === a._id ? (
                   <div>
                     <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Editing Record for {a.date}</div>
@@ -756,9 +1015,9 @@ const handleDeleteJobPost = async (id) => {
                       <button style={{ ...btnStyle, width: 'auto', padding: '4px 8px', fontSize: 12, background: '#1a1a1a' }} onClick={() => handleEditRecord(a)}>Edit</button>
                     </div>
                     <div><b>Day:</b> {a.date ? new Date(a.date).toLocaleDateString(undefined, { weekday: 'long' }) : '--'}</div>
-                    <div><b>Start:</b> {a.startTime ? new Date(a.startTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#888' }}>{findLocation(a.startTime, a.locations)}</span></div>
-                    <div><b>Lunch:</b> {a.lunchStartTime ? new Date(a.lunchStartTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#888' }}>{findLocation(a.lunchStartTime, a.locations)}</span> - {a.lunchEndTime ? new Date(a.lunchEndTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#888' }}>{findLocation(a.lunchEndTime, a.locations)}</span></div>
-                    <div><b>End:</b> {a.endTime ? new Date(a.endTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#888' }}>{findLocation(a.endTime, a.locations)}</span></div>
+                    <div><b>Start:</b> {a.startTime ? new Date(a.startTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.startTime, a.locations)}</span></div>
+                    <div><b>Lunch:</b> {a.lunchStartTime ? new Date(a.lunchStartTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.lunchStartTime, a.locations)}</span> - {a.lunchEndTime ? new Date(a.lunchEndTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.lunchEndTime, a.locations)}</span></div>
+                    <div><b>End:</b> {a.endTime ? new Date(a.endTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.endTime, a.locations)}</span></div>
                     <div><b>Total Hours:</b> {a.totalHours ? a.totalHours.toFixed(2) : '--'}</div>
                   </>
                 )}

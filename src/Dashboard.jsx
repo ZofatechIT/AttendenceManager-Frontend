@@ -16,6 +16,14 @@ export default function Dashboard({ user }) {
   const [location, setLocation] = useState(null);
   const [locations, setLocations] = useState([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showReportSection, setShowReportSection] = useState(false);
+  const [reportType, setReportType] = useState('');
+  const [reportDate, setReportDate] = useState('');
+  const [reportTime, setReportTime] = useState('');
+  const [reportMessage, setReportMessage] = useState('');
+  const [reportLocation, setReportLocation] = useState('');
+  const [reportPictures, setReportPictures] = useState([]);
+  const [submittingReport, setSubmittingReport] = useState(false);
   const lunchTimeout = useRef();
   const lunchEndTimeout = useRef();
   const locationInterval = useRef();
@@ -61,12 +69,85 @@ export default function Dashboard({ user }) {
     } catch {}
   };
 
+  // Submit report
+  const submitReport = async () => {
+    if (!reportType || !reportMessage) {
+      Swal.fire('Error', 'Please fill in all required fields', 'error');
+      return;
+    }
+
+    setSubmittingReport(true);
+    try {
+      const formData = new FormData();
+      formData.append('type', reportType);
+      formData.append('date', reportDate || new Date().toISOString().split('T')[0]);
+      formData.append('time', reportTime || new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
+      formData.append('message', reportMessage);
+      if (reportLocation) formData.append('location', reportLocation);
+      
+      if (reportPictures.length > 0) {
+        reportPictures.forEach(picture => {
+          formData.append('pictures', picture);
+        });
+      }
+
+      console.log('Submitting report with data:', {
+        type: reportType,
+        date: reportDate || new Date().toISOString().split('T')[0],
+        time: reportTime || new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+        message: reportMessage,
+        location: reportLocation,
+        picturesCount: reportPictures.length
+      });
+
+      const response = await fetch('https://attendencemanager-backend.onrender.com/api/reports', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Response error:', errorData);
+        throw new Error(errorData.message || 'Failed to submit report');
+      }
+
+      const result = await response.json();
+      console.log('Report submitted successfully:', result);
+      
+      Swal.fire('Success', 'Report submitted successfully!', 'success');
+      setShowReportSection(false);
+      setReportType('');
+      setReportDate('');
+      setReportTime('');
+      setReportMessage('');
+      setReportLocation('');
+      setReportPictures([]);
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      Swal.fire('Error', error.message || 'Failed to submit report', 'error');
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
+
+  // Handle picture upload
+  const handlePictureUpload = (e) => {
+    const files = Array.from(e.target.files);
+    setReportPictures(files);
+  };
+
   // Start time logic
   const handleStart = () => {
     Swal.fire({
       title: 'Confirm Start Time',
       text: 'Are you sure you want to begin your work day?',
       icon: 'question',
+      color: 'black',
       showCancelButton: true,
       confirmButtonText: 'Yes, start now!',
       cancelButtonText: 'Cancel'
@@ -327,7 +408,7 @@ export default function Dashboard({ user }) {
     textAlign: 'center',
     marginBottom: 10,
     fontSize: '1.75rem',
-    color: '#444',
+    color: 'black',
     fontWeight: 'bold',
   };
 
@@ -336,7 +417,7 @@ export default function Dashboard({ user }) {
     fontSize: '3rem',
     fontWeight: 'bold',
     margin: '0 0 24px 0',
-    color: '#22223b',
+    color: 'black',
     fontFamily: 'monospace',
   };
 
@@ -386,7 +467,7 @@ export default function Dashboard({ user }) {
   return (
     <div style={containerStyle}>
       <div style={cardStyle}>
-        <div style={{ fontWeight: 600, color: '#222', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ fontWeight: 600, color: 'black', display: 'flex', alignItems: 'center', gap: 8 }}>
           {user.name || user.employeeId}
           {user.isAdmin && (
             <>
@@ -421,41 +502,257 @@ export default function Dashboard({ user }) {
         <button onClick={handleEnd} style={btnStyle}>
           End Work
         </button>
+        <button onClick={() => setShowReportSection(true)} style={{...btnStyle, background: '#28a745'}}>
+          Report
+        </button>
       </div>
       
-      {user.location && (
-        <div style={{...summaryStyle, textAlign: 'center', marginTop: 16, fontWeight: 600 }}>
-          Location: {user.location.name}
-        </div>
-      )}
+             {user.location && (
+         <div style={{...summaryStyle, textAlign: 'center', marginTop: 16, fontWeight: 600, color: 'black' }}>
+           Location: {user.location.name}
+         </div>
+       )}
 
       <div style={{ marginTop: 24, fontSize: 16 }}>
         <div style={cardStyle}>
-          <div>Start Time</div>
-          <div style={{ color: '#222' }}>
+          <div style={{ color: 'black' }}>Start Time</div>
+          <div style={{ color: 'black' }}>
             {startTime ? getTimeString(startTime) : '-- : --'}
-            <span style={{fontSize:12, color:'#888', marginLeft:5}}>{findLocation(startTime, locations)}</span>
+            <span style={{fontSize:12, color:'black', marginLeft:5}}>{findLocation(startTime, locations)}</span>
           </div>
         </div>
         <div style={cardStyle}>
-          <div>Lunch</div>
-          <div style={{ color: '#222' }}>
+          <div style={{ color: 'black' }}>Lunch</div>
+          <div style={{ color: 'black' }}>
             {lunchStartTime ? getTimeString(lunchStartTime) : '-- : --'}
-            <span style={{fontSize:12, color:'#888', marginLeft:5}}>{findLocation(lunchStartTime, locations)}</span>
+            <span style={{fontSize:12, color:'black', marginLeft:5}}>{findLocation(lunchStartTime, locations)}</span>
             {' - '}
             {lunchEndTime ? getTimeString(lunchEndTime) : '-- : --'}
-            <span style={{fontSize:12, color:'#888', marginLeft:5}}>{findLocation(lunchEndTime, locations)}</span>
+            <span style={{fontSize:12, color:'black', marginLeft:5}}>{findLocation(lunchEndTime, locations)}</span>
           </div>
         </div>
         <div style={cardStyle}>
-          <div>End Time</div>
-          <div style={{ color: '#222' }}>
+          <div style={{ color: 'black' }}>End Time</div>
+          <div style={{ color: 'black' }}>
             {endTime ? getTimeString(endTime) : '-- : --'}
-            <span style={{fontSize:12, color:'#888', marginLeft:5}}>{findLocation(endTime, locations)}</span>
+            <span style={{fontSize:12, color:'black', marginLeft:5}}>{findLocation(endTime, locations)}</span>
           </div>
         </div>
         {totalHours && <div style={{ marginTop: 12, fontWeight: 600 }}>Total Hours Worked: {totalHours}</div>}
       </div>
+
+      {/* Report Section */}
+      {showReportSection && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: 12,
+            padding: 24,
+            maxWidth: 500,
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+               <h2 style={{ margin: 0, color: 'black' }}>Submit Report</h2>
+               <button 
+                 onClick={() => setShowReportSection(false)}
+                 style={{
+                   background: 'none',
+                   border: 'none',
+                   fontSize: 24,
+                   cursor: 'pointer',
+                   color: 'black'
+                 }}
+               >
+                 ×
+               </button>
+             </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Report Type *</label>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button
+                  onClick={() => {
+                    setReportType('all_ok');
+                    setReportMessage('Everything is working fine today. No issues to report.');
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    border: '2px solid',
+                    borderRadius: 8,
+                    background: reportType === 'all_ok' ? '#28a745' : '#fff',
+                    color: reportType === 'all_ok' ? '#fff' : '#28a745',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                >
+                  All OK
+                </button>
+                <button
+                  onClick={() => {
+                    setReportType('problem');
+                    setReportMessage('');
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: 12,
+                    border: '2px solid',
+                    borderRadius: 8,
+                    background: reportType === 'problem' ? '#dc3545' : '#fff',
+                    color: reportType === 'problem' ? '#fff' : '#dc3545',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
+                >
+                  Report Problem
+                </button>
+              </div>
+            </div>
+
+            {reportType === 'problem' && (
+              <>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Date</label>
+                  <input
+                    type="date"
+                    value={reportDate}
+                    onChange={(e) => setReportDate(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: 12,
+                      border: '1px solid #ddd',
+                      borderRadius: 8,
+                      fontSize: 16
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Time</label>
+                  <input
+                    type="time"
+                    value={reportTime}
+                    onChange={(e) => setReportTime(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: 12,
+                      border: '1px solid #ddd',
+                      borderRadius: 8,
+                      fontSize: 16
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Location</label>
+                  <input
+                    type="text"
+                    value={reportLocation}
+                    onChange={(e) => setReportLocation(e.target.value)}
+                    placeholder="Enter location details"
+                    style={{
+                      width: '100%',
+                      padding: 12,
+                      border: '1px solid #ddd',
+                      borderRadius: 8,
+                      fontSize: 16
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Add Pictures</label>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handlePictureUpload}
+                    style={{
+                      width: '100%',
+                      padding: 12,
+                      border: '1px solid #ddd',
+                      borderRadius: 8,
+                      fontSize: 16
+                    }}
+                  />
+                  {reportPictures.length > 0 && (
+                    <div style={{ marginTop: 8, fontSize: 14, color: 'black' }}>
+                      {reportPictures.length} picture(s) selected
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Message *</label>
+              <textarea
+                value={reportMessage}
+                onChange={(e) => setReportMessage(e.target.value)}
+                placeholder="Enter your report message..."
+                rows={4}
+                style={{
+                  width: '100%',
+                  padding: 12,
+                  border: '1px solid #ddd',
+                  borderRadius: 8,
+                  fontSize: 16,
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => setShowReportSection(false)}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  border: '1px solid #ddd',
+                  borderRadius: 8,
+                  background: '#fff',
+                  color: 'black',
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
+                disabled={submittingReport}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitReport}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  border: 'none',
+                  borderRadius: 8,
+                  background: '#646cff',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
+                disabled={submittingReport}
+              >
+                {submittingReport ? 'Submitting...' : 'Submit Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
