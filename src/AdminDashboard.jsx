@@ -736,9 +736,9 @@ const handleApplyFilters = () => {
   if (showReports) {
     return (
       <div style={modalOverlayStyle}>
-        <div style={{...modalContentStyle, maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto'}}>
+        <div style={{...modalContentStyle,  Height: '100%', overflowY: 'auto'}}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <h2>View Reports</h2>
+            <h2 style={{ color: 'black'}}>View Reports</h2>
             <button 
               onClick={() => setShowReports(false)}
               style={{
@@ -1002,7 +1002,7 @@ const handleApplyFilters = () => {
         {styleTag}
         <div className="admin-fullscreen-container">
           <div className="admin-users-card">
-            <h2>Manage Users</h2>
+            <h2 style={{ color: 'black'}}>Manage Users</h2>
             <button onClick={handleBack} className="btn btn-secondary" style={{ marginBottom: 16, width: 'auto' }}>
               Back
             </button>
@@ -1012,11 +1012,11 @@ const handleApplyFilters = () => {
                   <div className="user-info">
                     {u.profilePic && <img src={u.profilePic} alt="Profile" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', marginRight: 10 }} />}
                     <div>
-                      <span className="user-name">
+                      <span className="user-name" style={{ color: 'black'}}>
                         {u.name || u.employeeId}
                         {u.isAdmin && <span className="admin-tag"> [Admin]</span>}
                       </span>
-                      <span className="user-id">ID: {u.employeeId}</span>
+                      <span className="user-id" style={{ color: 'black'}}>ID: {u.employeeId}</span>
                       {u.jobPost && (
                         <span className="user-jobpost" style={{ display: 'block', color: '#666666', fontSize: 13 }}>
                           Job Post: {jobPosts.find(j => j._id === u.jobPost)?.name || u.jobPost}
@@ -1235,7 +1235,7 @@ const modalOverlayStyle = {
   left: 0,
   right: 0,
   bottom: 0,
-  background: 'rgba(0, 0, 0, 0.7)',
+  background: 'transparent',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -1246,8 +1246,8 @@ const modalContentStyle = {
   background: '#fff',
   padding: '20px',
   borderRadius: '8px',
-  width: '90%',
-  maxWidth: '500px',
+  width: '100%',
+  height: '100%',
   color: '#333'
 };
 const buttonStyle = {
