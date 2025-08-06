@@ -35,6 +35,116 @@ export default function AdminDashboard() {
   });
   const token = localStorage.getItem('token');
 
+  const styleTag = (
+    <style>{`
+      body {
+        background: #f5f7fa;
+      }
+      @media (min-width: 601px) {
+        .admin-fullscreen-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+          min-height: 100vh;
+          width: 100vw;
+          background: #f5f7fa !important;
+          padding-top: 32px;
+        }
+        .admin-main-card {
+          background: #fff;
+          border-radius: 16px;
+          box-shadow: 0 2px 16px rgba(100,108,255,0.07);
+          width: 100%;
+          padding: 32px 5vw 40px 5vw;
+          margin-bottom: 40px;
+        }
+        .admin-main-card h2 {
+          margin-top: 0;
+        }
+        .admin-main-card form {
+          margin-bottom: 32px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px 24px;
+        }
+        .admin-main-card form > h4,
+        .admin-main-card form > small,
+        .admin-main-card form > label,
+        .admin-main-card form > div[style*='margin: 8px 0'] {
+          grid-column: 1 / -1;
+        }
+        .admin-main-card button,
+        .admin-main-card select,
+        .admin-main-card input {
+          max-width: 100%;
+        }
+        .admin-main-card .btn,
+        .admin-main-card button {
+          width: 100%;
+          margin: 0 auto 16px auto;
+          display: block;
+        }
+        /* Manage Users grid */
+        .admin-users-card {
+          background: #fff;
+          border-radius: 16px;
+          box-shadow: 0 2px 16px rgba(100,108,255,0.07);
+          width: 100%;
+          padding: 32px 5vw 40px 5vw;
+          margin-bottom: 40px;
+        }
+        .users-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+          gap: 32px 24px;
+          margin-top: 24px;
+        }
+        .user-card {
+          background: #f9f9fb;
+          border-radius: 12px;
+          box-shadow: 0 1px 6px rgba(100,108,255,0.05);
+          padding: 24px 18px 18px 18px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .user-info {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 12px;
+        }
+        .user-actions {
+          display: flex;
+          gap: 12px;
+          width: 100%;
+        }
+        /* User details/edit card */
+        .admin-user-details-card {
+          background: #fff;
+          border-radius: 16px;
+          box-shadow: 0 2px 16px rgba(100,108,255,0.07);
+          width: 100%;
+          max-width: 900px;
+          margin: 32px auto 40px auto;
+          padding: 32px 40px 40px 40px;
+        }
+        .admin-user-details-card h4 {
+          margin-top: 0;
+        }
+      }
+      @media (max-width: 900px) {
+        .admin-main-card form {
+          grid-template-columns: 1fr;
+        }
+        .admin-user-details-card {
+          padding: 24px 8px 32px 8px;
+        }
+      }
+    `}</style>
+  );
+
   // Move fetchJobPosts to top-level so it can be used by handlers
   async function fetchJobPosts() {
     try {
@@ -791,244 +901,259 @@ const handleApplyFilters = () => {
 
   if (!manageMode) {
     return (
-      <div style={containerStyle}>
-        <h2 style={headerStyle}>Admin Dashboard</h2>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-          <button
-            onClick={() => window.location.href = '/'}
-            style={{ ...btnStyle, width: 'auto', padding: '8px 16px', fontSize: 14, background: '#28a745', marginRight: 8 }}
-          >
-            Home
-          </button>
-        </div>
-        <form onSubmit={handleAddUser} style={formStyle} encType="multipart/form-data">
-          <h4 style={{ color: 'black'}}>Add User</h4>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <input name="employeeId" placeholder="Employee ID (manual or generate)" value={form.employeeId} onChange={handleChange} required style={inputStyle} />
-            <button type="button" onClick={handleGenerateId} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14, background: '#28a745' }}>Generate</button>
-          </div>
-          <small style={{ color: '#888', marginBottom: 8, display: 'block' }}>You can enter an Employee ID manually or click Generate.</small>
-          <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required style={inputStyle} />
-          <input name="name" placeholder="Name" value={form.name} onChange={handleChange} style={inputStyle} />
-          <input name="email" placeholder="Email" value={form.email} onChange={handleChange} style={inputStyle} />
-          <input name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} style={inputStyle} />
-          <input name="address" placeholder="Address" value={form.address} onChange={handleChange} style={inputStyle} />
+      <>
+        {styleTag}
+        <div className="admin-fullscreen-container">
+          <div className="admin-main-card">
+            <h2 style={headerStyle}>Admin Dashboard</h2>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+              <button
+                onClick={() => window.location.href = '/'}
+                style={{ ...btnStyle, width: 'auto', padding: '8px 16px', fontSize: 14, background: '#28a745', marginRight: 8 }}
+              >
+                Home
+              </button>
+            </div>
+            <form onSubmit={handleAddUser} style={formStyle} encType="multipart/form-data">
+              <h4 style={{ color: 'black'}}>Add User</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input name="employeeId" placeholder="Employee ID (manual or generate)" value={form.employeeId} onChange={handleChange} required style={inputStyle} />
+                <button type="button" onClick={handleGenerateId} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14, background: '#28a745' }}>Generate</button>
+              </div>
+              <small style={{ color: '#888', marginBottom: 8, display: 'block' }}>You can enter an Employee ID manually or click Generate.</small>
+              <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required style={inputStyle} />
+              <input name="name" placeholder="Name" value={form.name} onChange={handleChange} style={inputStyle} />
+              <input name="email" placeholder="Email" value={form.email} onChange={handleChange} style={inputStyle} />
+              <input name="phone" placeholder="Phone" value={form.phone} onChange={handleChange} style={inputStyle} />
+              <input name="address" placeholder="Address" value={form.address} onChange={handleChange} style={inputStyle} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <select name="location" value={form.location} onChange={handleChange} style={{ ...inputStyle, flexGrow: 1 }}>
-              <option value="">Select Location</option>
-              {locations.map(loc => (
-                <option key={loc._id} value={loc._id}>{loc.name}</option>
-              ))}
-            </select>
-            <button type="button" onClick={() => setShowLocationManager(true)} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14 }}>Manage</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <select name="location" value={form.location} onChange={handleChange} style={{ ...inputStyle, flexGrow: 1 }}>
+                  <option value="">Select Location</option>
+                  {locations.map(loc => (
+                    <option key={loc._id} value={loc._id}>{loc.name}</option>
+                  ))}
+                </select>
+                <button type="button" onClick={() => setShowLocationManager(true)} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14 }}>Manage</button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <select name="jobPost" value={form.jobPost} onChange={handleChange} style={{ ...inputStyle, flexGrow: 1 }}>
+                  <option value="">Select Job Post</option>
+                  {jobPosts.map(post => (
+                    <option key={post._id} value={post._id}>{post.name}</option>
+                  ))}
+                </select>
+                  <button type="button" onClick={() => setShowJobPostManager(true)} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14 }}>Manage</button>
+                {/* Optional Job Post Manager button here */}
+              </div>
+              <label style={{ display: 'block', margin: '8px 0' }}>
+                <input type="checkbox" name="isAdmin" checked={form.isAdmin} onChange={handleChange} /> Admin
+              </label>
+              <div style={{ margin: '8px 0' }}>
+                <label style={{ color: 'black'}}>Profile Picture: <input type="file" accept="image/*" onChange={e => setProfilePic(e.target.files[0])} /></label>
+              </div>
+              <div style={{ margin: '8px 0' }}>
+                <label style={{ color: 'black'}}>ID Document Images: <input type="file" accept="image/*" multiple onChange={e => setIdDocs(e.target.files)} /></label>
+              </div>
+              <button type="submit" style={btnStyle} disabled={adding}>{adding ? 'Adding...' : 'Add User'}</button>
+            </form>
+            <button style={{ ...btnStyle, background: '#1a1a1a', marginTop: 16 }} onClick={handleManageUsers}>Manage Users</button>
+            <button 
+              style={{ 
+                ...btnStyle, 
+                background: '#17a2b8', 
+                marginTop: 16,
+                position: 'relative'
+              }} 
+              onClick={handleViewReports}
+            >
+              View Reports
+              {problemCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: -8,
+                  right: -8,
+                  background: '#dc3545',
+                  color: '#fff',
+                  borderRadius: '50%',
+                  width: 24,
+                  height: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 12,
+                  fontWeight: 'bold'
+                }}>
+                  {problemCount > 99 ? '99+' : problemCount}
+                </span>
+              )}
+            </button>
+            {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <select name="jobPost" value={form.jobPost} onChange={handleChange} style={{ ...inputStyle, flexGrow: 1 }}>
-              <option value="">Select Job Post</option>
-              {jobPosts.map(post => (
-                <option key={post._id} value={post._id}>{post.name}</option>
-              ))}
-            </select>
-              <button type="button" onClick={() => setShowJobPostManager(true)} style={{ ...btnStyle, width: 'auto', padding: '8px 12px', fontSize: 14 }}>Manage</button>
-            {/* Optional Job Post Manager button here */}
-          </div>
-          <label style={{ display: 'block', margin: '8px 0' }}>
-            <input type="checkbox" name="isAdmin" checked={form.isAdmin} onChange={handleChange} /> Admin
-          </label>
-          <div style={{ margin: '8px 0' }}>
-            <label style={{ color: 'black'}}>Profile Picture: <input type="file" accept="image/*" onChange={e => setProfilePic(e.target.files[0])} /></label>
-          </div>
-          <div style={{ margin: '8px 0' }}>
-            <label style={{ color: 'black'}}>ID Document Images: <input type="file" accept="image/*" multiple onChange={e => setIdDocs(e.target.files)} /></label>
-          </div>
-          <button type="submit" style={btnStyle} disabled={adding}>{adding ? 'Adding...' : 'Add User'}</button>
-        </form>
-        <button style={{ ...btnStyle, background: '#1a1a1a', marginTop: 16 }} onClick={handleManageUsers}>Manage Users</button>
-        <button 
-          style={{ 
-            ...btnStyle, 
-            background: '#17a2b8', 
-            marginTop: 16,
-            position: 'relative'
-          }} 
-          onClick={handleViewReports}
-        >
-          View Reports
-          {problemCount > 0 && (
-            <span style={{
-              position: 'absolute',
-              top: -8,
-              right: -8,
-              background: '#dc3545',
-              color: '#fff',
-              borderRadius: '50%',
-              width: 24,
-              height: 24,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 12,
-              fontWeight: 'bold'
-            }}>
-              {problemCount > 99 ? '99+' : problemCount}
-            </span>
-          )}
-        </button>
-        {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
-      </div>
+        </div>
+      </>
     );
   }
 
   // Manage users page
   if (manageMode && !selectedUser) {
     return (
-      <div className="admin-container">
-        <h2>Manage Users</h2>
-        <button onClick={handleBack} className="btn btn-secondary" >
-          Back
-        </button>
-        <div className="users-list">
-          {users.map(u => (
-            <div className="user-card" key={u._id}>
-              <div className="user-info">
-                {u.profilePic && <img src={u.profilePic} alt="Profile" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', marginRight: 10 }} />}
-                <div>
-                  <span className="user-name">
-                    {u.name || u.employeeId}
-                    {u.isAdmin && <span className="admin-tag"> [Admin]</span>}
-                  </span>
-                  <span className="user-id">ID: {u.employeeId}</span>
-                  {u.jobPost && (
-                    <span className="user-jobpost" style={{ display: 'block', color: '#666666', fontSize: 13 }}>
-                      Job Post: {jobPosts.find(j => j._id === u.jobPost)?.name || u.jobPost}
-                    </span>
-                  )}
+      <>
+        {styleTag}
+        <div className="admin-fullscreen-container">
+          <div className="admin-users-card">
+            <h2>Manage Users</h2>
+            <button onClick={handleBack} className="btn btn-secondary" style={{ marginBottom: 16, width: 'auto' }}>
+              Back
+            </button>
+            <div className="users-list">
+              {users.map(u => (
+                <div className="user-card" key={u._id}>
+                  <div className="user-info">
+                    {u.profilePic && <img src={u.profilePic} alt="Profile" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', marginRight: 10 }} />}
+                    <div>
+                      <span className="user-name">
+                        {u.name || u.employeeId}
+                        {u.isAdmin && <span className="admin-tag"> [Admin]</span>}
+                      </span>
+                      <span className="user-id">ID: {u.employeeId}</span>
+                      {u.jobPost && (
+                        <span className="user-jobpost" style={{ display: 'block', color: '#666666', fontSize: 13 }}>
+                          Job Post: {jobPosts.find(j => j._id === u.jobPost)?.name || u.jobPost}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="user-actions">
+                    <button className="btn" onClick={() => handleSelectUser(u)}>
+                      View / Edit
+                    </button>
+                    <button
+                      className="btn btn-danger"
+                      onClick={() => handleDeleteUser(u.employeeId)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="user-actions">
-                <button className="btn" onClick={() => handleSelectUser(u)}>
-                  View / Edit
-                </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => handleDeleteUser(u.employeeId)}
-                >
-                  Delete
-                </button>
-              </div>
+              ))}
             </div>
-          ))}
+            {error && <div className="error-message">{error}</div>}
+          </div>
         </div>
-        {error && <div className="error-message">{error}</div>}
-      </div>
+      </>
     );
   };
 
   // User details page
   if (manageMode && selectedUser) {
     return (
-      <div style={containerStyle}>
-        <button onClick={handleBack} style={{ ...btnStyle, background: '#1a1a1a', marginBottom: 12 }}>Back</button>
-        <div style={{ textAlign: 'center', marginBottom: 16 }}>
-          {selectedUser.profilePic && (
-            <img src={selectedUser.profilePic} alt="Profile" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: 8 }} />
-          )}
-          <div style={{ fontWeight: 700, fontSize: 18, color: '#333333' }}>{selectedUser.name || selectedUser.employeeId}</div>
-          <div style={{ fontSize: 14, color: '#666666' }}>ID: {selectedUser.employeeId}</div>
-          {selectedUser.email && <div style={{ fontSize: 14, color: '#666666' }}>Email: {selectedUser.email}</div>}
-          {selectedUser.phone && <div style={{ fontSize: 14, color: '#666666' }}>Phone: {selectedUser.phone}</div>}
-          {selectedUser.address && <div style={{ fontSize: 14, color: '#666666' }}>Address: {selectedUser.address}</div>}
-          {selectedUser.location && <div style={{ fontSize: 14, color: '#666666' }}>Location: {locations.find(l => l._id === selectedUser.location)?.name}</div>}
-          {selectedUser.jobPost && (
-            <div style={{ fontSize: 14, color: '#666666' }}>
-              Job Post: {jobPosts.find(j => j._id === selectedUser.jobPost)?.name || selectedUser.jobPost}
-            </div>
-          )}
+      <>
+        {styleTag}
+        <div className="admin-fullscreen-container">
+          <div className="admin-user-details-card">
+            <button onClick={handleBack} style={{ ...btnStyle, background: '#1a1a1a', marginBottom: 12, width: 'auto' }}>Back</button>
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              {selectedUser.profilePic && (
+                <img src={selectedUser.profilePic} alt="Profile" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', marginBottom: 8 }} />
+              )}
+              <div style={{ fontWeight: 700, fontSize: 18, color: '#333333' }}>{selectedUser.name || selectedUser.employeeId}</div>
+              <div style={{ fontSize: 14, color: '#666666' }}>ID: {selectedUser.employeeId}</div>
+              {selectedUser.email && <div style={{ fontSize: 14, color: '#666666' }}>Email: {selectedUser.email}</div>}
+              {selectedUser.phone && <div style={{ fontSize: 14, color: '#666666' }}>Phone: {selectedUser.phone}</div>}
+              {selectedUser.address && <div style={{ fontSize: 14, color: '#666666' }}>Address: {selectedUser.address}</div>}
+              {selectedUser.location && <div style={{ fontSize: 14, color: '#666666' }}>Location: {locations.find(l => l._id === selectedUser.location)?.name}</div>}
+              {selectedUser.jobPost && (
+                <div style={{ fontSize: 14, color: '#666666' }}>
+                  Job Post: {jobPosts.find(j => j._id === selectedUser.jobPost)?.name || selectedUser.jobPost}
+                </div>
+              )}
 
-          {selectedUser.idDocs && selectedUser.idDocs.length > 0 && (
-            <div style={{ marginTop: 10 }}>
-              <div style={{ fontWeight: 600, marginBottom: 4, color: '#333333' }}>ID Documents:</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                {selectedUser.idDocs.map((url, idx) => (
-                  <a href={url} target="_blank" rel="noopener noreferrer" key={idx}>
-                    <img src={url} alt={`ID Doc ${idx + 1}`} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 6, border: '1px solid #ccc' }} />
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-          {editMode ? (
-            <>
-              <input name="name" value={editUser.name} onChange={handleEditChange} style={inputStyle} placeholder="Name" />
-              <input name="employeeId" value={editUser.employeeId} onChange={handleEditChange} style={inputStyle} placeholder="Employee ID" />
-              <input name="password" value={editUser.password} onChange={handleEditChange} style={inputStyle} placeholder="New Password (leave blank to keep)" type="password" />
-              <select name="location" value={editUser.location} onChange={handleEditChange} style={inputStyle}>
-                <option value="">Select Location</option>
-                {locations.map(loc => (
-                  <option key={loc._id} value={loc._id}>{loc.name}</option>
-                ))}
-              </select>
-              <select name="jobPost" value={editUser.jobPost} onChange={handleEditChange} style={inputStyle}>
-                <option value="">Select Job Post</option>
-                {jobPosts.map(post => (
-                  <option key={post._id} value={post._id}>{post.name}</option>
-                ))}
-              </select>
-              <label style={{ display: 'block', margin: '8px 0', color: '#333333' }}>
-                <input type="checkbox" name="isAdmin" checked={editUser.isAdmin} onChange={handleEditChange} /> Admin
-              </label>
-              <button style={{ ...btnStyle, marginTop: 8 }} onClick={handleSaveEdit}>Save</button>
-              <button style={{ ...btnStyle, background: '#888', marginTop: 8 }} onClick={() => setEditMode(false)}>Cancel</button>
-            </>
-          ) : (
-            <>
-              <button style={{ ...btnStyle, marginTop: 8 }} onClick={handleEdit}>Edit</button>
-            </>
-          )}
-        </div>
-        <h4 style={{ color: '#333333' }}>Attendance Records</h4>
-        {loadingAttendance ? <div style={{ color: '#333333' }}>Loading attendance...</div> : (
-          <ul style={{ padding: 0, listStyle: 'none' }}>
-            {attendance.map((a, i) => (
-              <li key={i} style={{ ...attendanceCardStyle, background: editingRecordId === a._id ? '#f8f9fa' : '#ffffff', color: '#333333' }}>
-                {editingRecordId === a._id ? (
-                  <div>
-                    <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Editing Record for {a.date}</div>
-                    <label style={editLabelStyle}>Start Time</label>
-                    <input type="datetime-local" name="startTime" value={editRecordData.startTime} onChange={handleRecordInputChange} style={editInputStyle} />
-                    <label style={editLabelStyle}>Lunch Start</label>
-                    <input type="datetime-local" name="lunchStartTime" value={editRecordData.lunchStartTime} onChange={handleRecordInputChange} style={editInputStyle} />
-                    <label style={editLabelStyle}>Lunch End</label>
-                    <input type="datetime-local" name="lunchEndTime" value={editRecordData.lunchEndTime} onChange={handleRecordInputChange} style={editInputStyle} />
-                    <label style={editLabelStyle}>End Time</label>
-                    <input type="datetime-local" name="endTime" value={editRecordData.endTime} onChange={handleRecordInputChange} style={editInputStyle} />
-                    <div style={{ marginTop: 12 }}>
-                      <button style={{ ...btnStyle, background: '#28a745', width: 'auto', padding: '6px 12px', fontSize: 14, marginRight: 8 }} onClick={() => handleSaveRecord(a._id)}>Save</button>
-                      <button style={{ ...btnStyle, background: '#888', width: 'auto', padding: '6px 12px', fontSize: 14 }} onClick={handleCancelEditRecord}>Cancel</button>
-                    </div>
+              {selectedUser.idDocs && selectedUser.idDocs.length > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontWeight: 600, marginBottom: 4, color: '#333333' }}>ID Documents:</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {selectedUser.idDocs.map((url, idx) => (
+                      <a href={url} target="_blank" rel="noopener noreferrer" key={idx}>
+                        <img src={url} alt={`ID Doc ${idx + 1}`} style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 6, border: '1px solid #ccc' }} />
+                      </a>
+                    ))}
                   </div>
-                ) : (
-                  <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <div><b>Date:</b> {a.date}</div>
-                      <button style={{ ...btnStyle, width: 'auto', padding: '4px 8px', fontSize: 12, background: '#1a1a1a' }} onClick={() => handleEditRecord(a)}>Edit</button>
-                    </div>
-                    <div><b>Day:</b> {a.date ? new Date(a.date).toLocaleDateString(undefined, { weekday: 'long' }) : '--'}</div>
-                    <div><b>Start:</b> {a.startTime ? new Date(a.startTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.startTime, a.locations)}</span></div>
-                    <div><b>Lunch:</b> {a.lunchStartTime ? new Date(a.lunchStartTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.lunchStartTime, a.locations)}</span> - {a.lunchEndTime ? new Date(a.lunchEndTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.lunchEndTime, a.locations)}</span></div>
-                    <div><b>End:</b> {a.endTime ? new Date(a.endTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.endTime, a.locations)}</span></div>
-                    <div><b>Total Hours:</b> {a.totalHours ? a.totalHours.toFixed(2) : '--'}</div>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
-      </div>
+                </div>
+              )}
+              {editMode ? (
+                <>
+                  <input name="name" value={editUser.name} onChange={handleEditChange} style={inputStyle} placeholder="Name" />
+                  <input name="employeeId" value={editUser.employeeId} onChange={handleEditChange} style={inputStyle} placeholder="Employee ID" />
+                  <input name="password" value={editUser.password} onChange={handleEditChange} style={inputStyle} placeholder="New Password (leave blank to keep)" type="password" />
+                  <select name="location" value={editUser.location} onChange={handleEditChange} style={inputStyle}>
+                    <option value="">Select Location</option>
+                    {locations.map(loc => (
+                      <option key={loc._id} value={loc._id}>{loc.name}</option>
+                    ))}
+                  </select>
+                  <select name="jobPost" value={editUser.jobPost} onChange={handleEditChange} style={inputStyle}>
+                    <option value="">Select Job Post</option>
+                    {jobPosts.map(post => (
+                      <option key={post._id} value={post._id}>{post.name}</option>
+                    ))}
+                  </select>
+                  <label style={{ display: 'block', margin: '8px 0', color: '#333333' }}>
+                    <input type="checkbox" name="isAdmin" checked={editUser.isAdmin} onChange={handleEditChange} /> Admin
+                  </label>
+                  <button style={{ ...btnStyle, marginTop: 8 }} onClick={handleSaveEdit}>Save</button>
+                  <button style={{ ...btnStyle, background: '#888', marginTop: 8 }} onClick={() => setEditMode(false)}>Cancel</button>
+                </>
+              ) : (
+                <>
+                  <button style={{ ...btnStyle, marginTop: 8 }} onClick={handleEdit}>Edit</button>
+                </>
+              )}
+            </div>
+            <h4 style={{ color: '#333333' }}>Attendance Records</h4>
+            {loadingAttendance ? <div style={{ color: '#333333' }}>Loading attendance...</div> : (
+              <ul style={{ padding: 0, listStyle: 'none' }}>
+                {attendance.map((a, i) => (
+                  <li key={i} style={{ ...attendanceCardStyle, background: editingRecordId === a._id ? '#f8f9fa' : '#ffffff', color: '#333333' }}>
+                    {editingRecordId === a._id ? (
+                      <div>
+                        <div style={{ fontWeight: 'bold', marginBottom: 8 }}>Editing Record for {a.date}</div>
+                        <label style={editLabelStyle}>Start Time</label>
+                        <input type="datetime-local" name="startTime" value={editRecordData.startTime} onChange={handleRecordInputChange} style={editInputStyle} />
+                        <label style={editLabelStyle}>Lunch Start</label>
+                        <input type="datetime-local" name="lunchStartTime" value={editRecordData.lunchStartTime} onChange={handleRecordInputChange} style={editInputStyle} />
+                        <label style={editLabelStyle}>Lunch End</label>
+                        <input type="datetime-local" name="lunchEndTime" value={editRecordData.lunchEndTime} onChange={handleRecordInputChange} style={editInputStyle} />
+                        <label style={editLabelStyle}>End Time</label>
+                        <input type="datetime-local" name="endTime" value={editRecordData.endTime} onChange={handleRecordInputChange} style={editInputStyle} />
+                        <div style={{ marginTop: 12 }}>
+                          <button style={{ ...btnStyle, background: '#28a745', width: 'auto', padding: '6px 12px', fontSize: 14, marginRight: 8 }} onClick={() => handleSaveRecord(a._id)}>Save</button>
+                          <button style={{ ...btnStyle, background: '#888', width: 'auto', padding: '6px 12px', fontSize: 14 }} onClick={handleCancelEditRecord}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                          <div><b>Date:</b> {a.date}</div>
+                          <button style={{ ...btnStyle, width: 'auto', padding: '4px 8px', fontSize: 12, background: '#1a1a1a' }} onClick={() => handleEditRecord(a)}>Edit</button>
+                        </div>
+                        <div><b>Day:</b> {a.date ? new Date(a.date).toLocaleDateString(undefined, { weekday: 'long' }) : '--'}</div>
+                        <div><b>Start:</b> {a.startTime ? new Date(a.startTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.startTime, a.locations)}</span></div>
+                        <div><b>Lunch:</b> {a.lunchStartTime ? new Date(a.lunchStartTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.lunchStartTime, a.locations)}</span> - {a.lunchEndTime ? new Date(a.lunchEndTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.lunchEndTime, a.locations)}</span></div>
+                        <div><b>End:</b> {a.endTime ? new Date(a.endTime).toLocaleTimeString() : '--'} <span style={{ fontSize: 12, color: '#666666' }}>{findLocation(a.endTime, a.locations)}</span></div>
+                        <div><b>Total Hours:</b> {a.totalHours ? a.totalHours.toFixed(2) : '--'}</div>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {error && <div style={{ color: 'red', marginTop: 12 }}>{error}</div>}
+          </div>
+        </div>
+      </>
     );
-  };
+  }
 }
 
 // --- Style objects below ---

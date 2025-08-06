@@ -41,22 +41,40 @@ export default function Login() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
-      <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 350, background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: 24 , color : 'black'}}>Employee Login</h2>
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ color: 'black'}}>Employee ID</label>
-          <input type="text" value={employeeId} onChange={e => setEmployeeId(e.target.value)} required style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginTop: 4 ,  color : 'black'}} />
-        </div>
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ color: 'black'}}>Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginTop: 4 ,  color : 'black'}} />
-        </div>
-        {error && <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>}
-        <button type="submit" style={{ width: '100%', padding: 10, borderRadius: 6, background: '#646cff', color: '#fff', border: 'none', fontWeight: 600 }} disabled={loading}>
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
-    </div>
+    <>
+      <style>{`
+        @media (min-width: 601px) {
+          .login-fullscreen-container {
+            max-width: none !important;
+            width: 100vw !important;
+            min-height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            background: #f5f5f5 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+          }
+        }
+      `}</style>
+      <div className="login-fullscreen-container" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
+        <form onSubmit={handleSubmit} style={{ width: '100%', maxWidth: 350, background: '#fff', padding: 24, borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+          <h2 style={{ textAlign: 'center', marginBottom: 24 , color : 'black'}}>Employee Login</h2>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: 'black'}}>Employee ID</label>
+            <input type="text" value={employeeId} onChange={e => setEmployeeId(e.target.value)} required style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginTop: 4 ,  color : 'black'}} />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ color: 'black'}}>Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ccc', marginTop: 4 ,  color : 'black'}} />
+          </div>
+          {error && <div style={{ color: 'red', marginBottom: 12 }}>{error}</div>}
+          <button type="submit" style={{ width: '100%', padding: 10, borderRadius: 6, background: '#646cff', color: '#fff', border: 'none', fontWeight: 600 }} disabled={loading}>
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+      </div>
+    </>
   );
 } 

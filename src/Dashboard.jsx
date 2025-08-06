@@ -446,6 +446,12 @@ export default function Dashboard({ user }) {
         .dashboard-container {
           padding: 8px !important;
         }
+        .dashboard-main-flex {
+          flex-direction: column !important;
+        }
+        .dashboard-left, .dashboard-right {
+          width: 100% !important;
+        }
         .dashboard-card {
           padding: 10px !important;
           font-size: 15px !important;
@@ -462,12 +468,59 @@ export default function Dashboard({ user }) {
           padding: 10px !important;
         }
       }
+      @media (min-width: 601px) {
+        .dashboard-container {
+          max-width: none !important;
+          width: 100vw !important;
+          min-height: 100vh !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          box-sizing: border-box !important;
+        }
+        .dashboard-main-flex {
+          display: flex !important;
+          flex-direction: row !important;
+          gap: 40px !important;
+          align-items: flex-start;
+          width: 100%;
+          height: 100vh;
+        }
+        .dashboard-left {
+          flex: 1 1 350px;
+          max-width: 500px;
+          padding: 48px 32px 48px 64px;
+        }
+        .dashboard-right {
+          flex: 2 1 0;
+          min-width: 0;
+          padding: 48px 64px 48px 32px;
+        }
+        .dashboard-card {
+          font-size: 20px !important;
+          padding: 32px !important;
+        }
+        .dashboard-title {
+          font-size: 28px !important;
+        }
+        .dashboard-btn {
+          font-size: 20px !important;
+          padding: 18px !important;
+        }
+        .dashboard-summary {
+          font-size: 18px !important;
+          padding: 18px !important;
+        }
+      }
     `}</style>
   );
   return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <div style={{ fontWeight: 600, color: 'black', display: 'flex', alignItems: 'center', gap: 8 }}>
+    <>
+      {styleTag}
+      <div className="dashboard-container" style={containerStyle}>
+        <div className="dashboard-main-flex">
+          <div className="dashboard-left">
+            <div className="dashboard-card" style={cardStyle}>
+              <div className="dashboard-title" style={{ fontWeight: 600, color: 'black', display: 'flex', alignItems: 'center', gap: 8 }}>
           {user.name || user.employeeId}
           {user.isAdmin && (
             <>
@@ -483,45 +536,43 @@ export default function Dashboard({ user }) {
         </div>
         <button onClick={handleLogout} style={logoutBtnStyle}>Logout</button>
       </div>
-
       <div style={infoStyle}>{day}, {date}</div>
       <div style={clockStyle}>
         {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </div>
-
+          </div>
+          <div className="dashboard-right">
       <div style={btnContainerStyle}>
-        <button onClick={handleStart} style={btnStyle}>
+              <button className="dashboard-btn" onClick={handleStart} style={btnStyle}>
           Begin Work
         </button>
-        <button onClick={handleLunchStart} style={btnStyle}>
+              <button className="dashboard-btn" onClick={handleLunchStart} style={btnStyle}>
           Lunch Break Start
         </button>
-        <button onClick={handleLunchEnd} style={btnStyle}>
+              <button className="dashboard-btn" onClick={handleLunchEnd} style={btnStyle}>
           Lunch Break End
         </button>
-        <button onClick={handleEnd} style={btnStyle}>
+              <button className="dashboard-btn" onClick={handleEnd} style={btnStyle}>
           End Work
         </button>
-        <button onClick={() => setShowReportSection(true)} style={{...btnStyle, background: '#28a745'}}>
+              <button className="dashboard-btn" onClick={() => setShowReportSection(true)} style={{...btnStyle, background: '#28a745'}}>
           Report
         </button>
       </div>
-      
              {user.location && (
-         <div style={{...summaryStyle, textAlign: 'center', marginTop: 16, fontWeight: 600, color: 'black' }}>
+             <div className="dashboard-summary" style={{...summaryStyle, textAlign: 'center', marginTop: 16, fontWeight: 600, color: 'black' }}>
            Location: {user.location.name}
          </div>
        )}
-
       <div style={{ marginTop: 24, fontSize: 16 }}>
-        <div style={cardStyle}>
+              <div className="dashboard-card" style={cardStyle}>
           <div style={{ color: 'black' }}>Start Time</div>
           <div style={{ color: 'black' }}>
             {startTime ? getTimeString(startTime) : '-- : --'}
             <span style={{fontSize:12, color:'black', marginLeft:5}}>{findLocation(startTime, locations)}</span>
           </div>
         </div>
-        <div style={cardStyle}>
+              <div className="dashboard-card" style={cardStyle}>
           <div style={{ color: 'black' }}>Lunch</div>
           <div style={{ color: 'black' }}>
             {lunchStartTime ? getTimeString(lunchStartTime) : '-- : --'}
@@ -531,7 +582,7 @@ export default function Dashboard({ user }) {
             <span style={{fontSize:12, color:'black', marginLeft:5}}>{findLocation(lunchEndTime, locations)}</span>
           </div>
         </div>
-        <div style={cardStyle}>
+              <div className="dashboard-card" style={cardStyle}>
           <div style={{ color: 'black' }}>End Time</div>
           <div style={{ color: 'black' }}>
             {endTime ? getTimeString(endTime) : '-- : --'}
@@ -540,7 +591,8 @@ export default function Dashboard({ user }) {
         </div>
         {totalHours && <div style={{ marginTop: 12, fontWeight: 600 }}>Total Hours Worked: {totalHours}</div>}
       </div>
-
+          </div>
+        </div>
       {/* Report Section */}
       {showReportSection && (
         <div style={{
@@ -556,7 +608,7 @@ export default function Dashboard({ user }) {
           zIndex: 1000,
           padding: '20px'
         }}>
-          <div style={{
+            <div className="dashboard-card" style={{
             background: '#fff',
             borderRadius: 12,
             padding: 24,
@@ -754,6 +806,7 @@ export default function Dashboard({ user }) {
         </div>
       )}
     </div>
+    </>
   );
 }
 
