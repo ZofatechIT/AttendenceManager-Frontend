@@ -30,6 +30,7 @@ export default function Login() {
       if (!res.ok) throw new Error(data.message || 'Login failed');
       
       localStorage.setItem('token', data.token);
+      localStorage.setItem('refreshToken', data.refreshToken);
       localStorage.setItem('user', JSON.stringify(data.user));
       window.location.href = '/dashboard';
     } catch (err) {

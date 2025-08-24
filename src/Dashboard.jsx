@@ -24,6 +24,20 @@ export default function Dashboard({ user }) {
   const [reportLocation, setReportLocation] = useState('');
   const [reportPictures, setReportPictures] = useState([]);
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [liveData, setLiveData] = useState({
+    activeGuards: 0,
+    totalPosts: 0,
+    incidentsToday: 0,
+    checkInsToday: 0,
+    lastUpdate: new Date()
+  });
+  const [recentCheckIns, setRecentCheckIns] = useState([]);
+  const [guardStatuses, setGuardStatuses] = useState([]);
+  const [isLoadingLiveData, setIsLoadingLiveData] = useState(false);
+  const [lastDataUpdate, setLastDataUpdate] = useState(null);
+  const [isUsingLiveData, setIsUsingLiveData] = useState(false);
+  const [showAllGuards, setShowAllGuards] = useState(false);
+  const [guardsToShow, setGuardsToShow] = useState(5);
   const lunchTimeout = useRef();
   const lunchEndTimeout = useRef();
   const locationInterval = useRef();
@@ -36,22 +50,54 @@ export default function Dashboard({ user }) {
     window.location.href = '/';
   };
 
-  // console.log(token)
-
   // Helper to get and update location
   const updateLocation = (send = false) => {
     if (navigator.geolocation) {
+      console.log('📍 Dashboard: Requesting GPS location...');
+      
       navigator.geolocation.getCurrentPosition(
         pos => {
-          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          const newLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          console.log('✅ Dashboard: GPS location captured:', newLocation);
+          setLocation(newLocation);
+          
+          // Always send location to backend when it's updated
+          console.log('📤 Dashboard: Automatically sending location to backend...');
+          sendAttendance('location', getTime(), pos.coords.latitude, pos.coords.longitude);
+        },
+        err => {
+          console.error('❌ Dashboard: GPS error:', err);
+          let errorMessage = 'Location access denied';
+          
+          switch(err.code) {
+            case err.PERMISSION_DENIED:
+              errorMessage = 'GPS permission denied. Please enable location access.';
+              break;
+            case err.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information unavailable.';
+              break;
+            case err.TIMEOUT:
+              errorMessage = 'GPS request timed out.';
+              break;
+            default:
+              errorMessage = 'GPS error: ' + err.message;
+          }
+          
+          setLocation(errorMessage);
+          
+          // Show user-friendly error message
           if (send) {
-            sendAttendance('location', getTime(), pos.coords.latitude, pos.coords.longitude);
+            Swal.fire('Location Error', errorMessage, 'warning');
           }
         },
-        err => setLocation('Permission denied')
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
       );
     } else {
-      setLocation('Not supported');
+      setLocation('GPS not supported');
     }
   };
 
@@ -69,85 +115,12 @@ export default function Dashboard({ user }) {
     } catch {}
   };
 
-  // Submit report
-  const submitReport = async () => {
-    if (!reportType || !reportMessage) {
-      Swal.fire('Error', 'Please fill in all required fields', 'error');
-      return;
-    }
-
-    setSubmittingReport(true);
-    try {
-      const formData = new FormData();
-      formData.append('type', reportType);
-      formData.append('date', reportDate || new Date().toISOString().split('T')[0]);
-      formData.append('time', reportTime || new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
-      formData.append('message', reportMessage);
-      if (reportLocation) formData.append('location', reportLocation);
-      
-      if (reportPictures.length > 0) {
-        reportPictures.forEach(picture => {
-          formData.append('pictures', picture);
-        });
-      }
-
-      console.log('Submitting report with data:', {
-        type: reportType,
-        date: reportDate || new Date().toISOString().split('T')[0],
-        time: reportTime || new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-        message: reportMessage,
-        location: reportLocation,
-        picturesCount: reportPictures.length
-      });
-
-      const response = await fetch('https://attendencemanager-backend.onrender.com/api/reports', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      console.log('Response status:', response.status);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Response error:', errorData);
-        throw new Error(errorData.message || 'Failed to submit report');
-      }
-
-      const result = await response.json();
-      console.log('Report submitted successfully:', result);
-      
-      Swal.fire('Success', 'Report submitted successfully!', 'success');
-      setShowReportSection(false);
-      setReportType('');
-      setReportDate('');
-      setReportTime('');
-      setReportMessage('');
-      setReportLocation('');
-      setReportPictures([]);
-    } catch (error) {
-      console.error('Error submitting report:', error);
-      Swal.fire('Error', error.message || 'Failed to submit report', 'error');
-    } finally {
-      setSubmittingReport(false);
-    }
-  };
-
-  // Handle picture upload
-  const handlePictureUpload = (e) => {
-    const files = Array.from(e.target.files);
-    setReportPictures(files);
-  };
-
   // Start time logic
   const handleStart = () => {
     Swal.fire({
       title: 'Confirm Start Time',
       text: 'Are you sure you want to begin your work day?',
       icon: 'question',
-      color: 'black',
       showCancelButton: true,
       confirmButtonText: 'Yes, start now!',
       cancelButtonText: 'Cancel'
@@ -155,6 +128,7 @@ export default function Dashboard({ user }) {
       if (result.isConfirmed) doStart();
     });
   };
+  
   const doStart = () => {
     setStarted(true);
     setLunchStarted(false);
@@ -199,6 +173,7 @@ export default function Dashboard({ user }) {
       if (result.isConfirmed) doLunchStart();
     });
   };
+  
   const doLunchStart = () => {
     setLunchStarted(true);
     setLunchEnded(false);
@@ -206,7 +181,7 @@ export default function Dashboard({ user }) {
     setLunchEndTime(null);
     setEndTime(null);
     setTotalHours(null);
-    const now = new Date();
+      const now = new Date();
     setLunchStartTime(now);
     navigator.geolocation.getCurrentPosition(
       pos => {
@@ -240,11 +215,12 @@ export default function Dashboard({ user }) {
       if (result.isConfirmed) doLunchEnd();
     });
   };
+  
   const doLunchEnd = () => {
     setLunchEnded(true);
-    setEnded(false);
-    setEndTime(null);
-    setTotalHours(null);
+        setEnded(false);
+        setEndTime(null);
+        setTotalHours(null);
     const now = new Date();
     setLunchEndTime(now);
     navigator.geolocation.getCurrentPosition(
@@ -264,7 +240,7 @@ export default function Dashboard({ user }) {
 
   // End work
   const handleEnd = () => {
-    Swal.fire({
+          Swal.fire({
       title: 'Confirm End of Day',
       text: 'Are you sure you want to end your work day?',
       icon: 'warning',
@@ -275,11 +251,12 @@ export default function Dashboard({ user }) {
       if (result.isConfirmed) doEnd();
     });
   };
+  
   const doEnd = () => {
     setEnded(true);
     const end = new Date();
     setEndTime(end);
-    clearTimeout(lunchTimeout.current);
+          clearTimeout(lunchTimeout.current);
     clearTimeout(lunchEndTimeout.current);
     clearInterval(locationInterval.current);
     navigator.geolocation.getCurrentPosition(
@@ -305,6 +282,72 @@ export default function Dashboard({ user }) {
     Swal.fire('Day Complete!', 'You have successfully clocked out.', 'success');
   };
 
+  // Reset session
+  const handleReset = () => {
+    Swal.fire({
+      title: 'Confirm Reset',
+      text: 'Are you sure you want to reset your session? This will clear all current data.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, reset!',
+      cancelButtonText: 'Cancel'
+    }).then(result => {
+      if (result.isConfirmed) {
+        setStarted(false);
+        setLunchStarted(false);
+        setLunchEnded(false);
+        setEnded(false);
+        setStartTime(null);
+        setLunchStartTime(null);
+        setLunchEndTime(null);
+        setEndTime(null);
+        setTotalHours(null);
+        setLocations([]);
+        clearTimeout(lunchTimeout.current);
+        clearTimeout(lunchEndTimeout.current);
+          clearInterval(locationInterval.current);
+        Swal.fire('Reset Complete!', 'Your session has been reset.', 'success');
+      }
+    });
+  };
+
+  // Load live data from backend
+  const loadLiveData = async () => {
+    try {
+      setIsLoadingLiveData(true);
+      const response = await fetch('https://attendencemanager-backend.onrender.com/api/live/status', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Dashboard: Live data loaded:', data);
+        
+        setLiveData({
+          activeGuards: data.liveData.activeGuards,
+          totalPosts: data.liveData.totalPosts,
+          incidentsToday: data.liveData.incidentsToday,
+          checkInsToday: data.liveData.checkInsToday,
+          lastUpdate: new Date(data.liveData.lastUpdate)
+        });
+        
+        setGuardStatuses(data.guardStatuses || []);
+        setRecentCheckIns(data.recentCheckIns || []);
+        setIsUsingLiveData(true);
+        setLastDataUpdate(new Date());
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ Dashboard: Error loading live data:', error);
+      setIsUsingLiveData(false);
+    } finally {
+      setIsLoadingLiveData(false);
+    }
+  };
+
   // Fetch today's attendance on load
   useEffect(() => {
     async function fetchAttendance() {
@@ -321,11 +364,11 @@ export default function Dashboard({ user }) {
           setStartTime(new Date(att.startTime));
         }
         if (att.lunchStartTime) {
-          setLunchStarted(true);
+            setLunchStarted(true);
           setLunchStartTime(new Date(att.lunchStartTime));
-        }
+          }
         if (att.lunchEndTime) {
-          setLunchEnded(true);
+            setLunchEnded(true);
           setLunchEndTime(new Date(att.lunchEndTime));
         }
         if (att.endTime) {
@@ -336,15 +379,18 @@ export default function Dashboard({ user }) {
         if (att.totalHours) setTotalHours(att.totalHours.toFixed(2));
       } catch {}
     }
-    // eslint-disable-next-line
+    
     fetchAttendance();
-  }, []);
-
-  useEffect(() => {
+    loadLiveData();
+    
+    // Update live data every 30 seconds
+    const dataTimer = setInterval(loadLiveData, 30000);
+    
     return () => {
       clearTimeout(lunchTimeout.current);
       clearTimeout(lunchEndTimeout.current);
       clearInterval(locationInterval.current);
+      clearInterval(dataTimer);
     };
   }, []);
 
@@ -364,465 +410,316 @@ export default function Dashboard({ user }) {
   const today = new Date();
   const day = today.toLocaleDateString(undefined, { weekday: 'long' });
   const date = today.toLocaleDateString();
-  // Responsive styles
-  const containerStyle = {
-    maxWidth: 420,
-    margin: '0 auto',
-    padding: 16,
-    background: '#f8fafc',
-    minHeight: '100vh',
-    boxSizing: 'border-box',
-    fontFamily: 'Inter, Arial, sans-serif',
-  };
 
-  const cardStyle = {
-    marginBottom: 18,
-    background: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    textAlign: 'center',
-    fontSize: 17,
-    fontWeight: 600,
-    boxShadow: '0 2px 8px rgba(100,108,255,0.07)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 8,
-  };
-
-  const logoutBtnStyle = {
-    background: '#ff4d4f',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 8,
-    padding: '7px 14px',
-    fontWeight: 500,
-    fontSize: 15,
-    cursor: 'pointer',
-    marginLeft: 8,
-    marginTop: 4,
-  };
-
-  const infoStyle = {
-    textAlign: 'center',
-    marginBottom: 10,
-    fontSize: '1.75rem',
-    color: 'black',
-    fontWeight: 'bold',
-  };
-
-  const clockStyle = {
-    textAlign: 'center',
-    fontSize: '3rem',
-    fontWeight: 'bold',
-    margin: '0 0 24px 0',
-    color: 'black',
-    fontFamily: 'monospace',
-  };
-
-  const btnContainerStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-    margin: '0 0 10px 0',
-  };
-
-  const summaryStyle = {
-    marginTop: 22,
-    fontSize: 16,
-    background: '#fff',
-    borderRadius: 10,
-    padding: 14,
-    boxShadow: '0 1px 4px rgba(100,108,255,0.05)',
-    lineHeight: 1.7,
-    wordBreak: 'break-word',
-  };
-
-  // Responsive media queries
-  const styleTag = (
-    <style>{`
-      @media (max-width: 600px) {
-        .dashboard-container {
-          padding: 8px !important;
-        }
-        .dashboard-main-flex {
-          flex-direction: column !important;
-        }
-        .dashboard-left, .dashboard-right {
-          width: 100% !important;
-        }
-        .dashboard-card {
-          padding: 10px !important;
-          font-size: 15px !important;
-        }
-        .dashboard-title {
-          font-size: 18px !important;
-        }
-        .dashboard-btn {
-          font-size: 16px !important;
-          padding: 12px !important;
-        }
-        .dashboard-summary {
-          font-size: 14px !important;
-          padding: 10px !important;
-        }
-      }
-      @media (min-width: 601px) {
-        .dashboard-container {
-          max-width: none !important;
-          width: 100vw !important;
-          min-height: 100vh !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          box-sizing: border-box !important;
-        }
-        .dashboard-main-flex {
-          display: flex !important;
-          flex-direction: row !important;
-          gap: 40px !important;
-          align-items: flex-start;
-          width: 100%;
-          height: 100vh;
-        }
-        .dashboard-left {
-          flex: 1 1 350px;
-          max-width: 500px;
-          padding: 48px 32px 48px 64px;
-        }
-        .dashboard-right {
-          flex: 2 1 0;
-          min-width: 0;
-          padding: 48px 64px 48px 32px;
-        }
-        .dashboard-card {
-          font-size: 20px !important;
-          padding: 32px !important;
-        }
-        .dashboard-title {
-          font-size: 28px !important;
-        }
-        .dashboard-btn {
-          font-size: 20px !important;
-          padding: 18px !important;
-        }
-        .dashboard-summary {
-          font-size: 18px !important;
-          padding: 18px !important;
-        }
-      }
-    `}</style>
-  );
   return (
     <>
-      {styleTag}
-      <div className="dashboard-container" style={containerStyle}>
-        <div className="dashboard-main-flex">
-          <div className="dashboard-left">
-            <div className="dashboard-card" style={cardStyle}>
-              <div className="dashboard-title" style={{ fontWeight: 600, color: 'black', display: 'flex', alignItems: 'center', gap: 8 }}>
-          {user.name || user.employeeId}
-          {user.isAdmin && (
-            <>
-              <span style={{ color: '#28a745', fontWeight: 700, fontSize: 14, marginLeft: 8 }}>[Admin]</span>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', fontFamily: 'Inter, Arial, sans-serif' }}>
+        {/* Header */}
+        <header style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '1rem', borderRadius: '12px', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.5rem' }}>Welcome, {user.name || user.employeeId}</h1>
+            <p style={{ margin: '0.5rem 0 0 0', opacity: 0.9 }}>
+              {day}, {date} • {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {user.isAdmin && (
               <button
-                style={{ marginLeft: 12, background: '#646cff', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 12px', fontWeight: 500, fontSize: 14, cursor: 'pointer' }}
+                style={{ background: '#646cff', color: 'white', border: 'none', borderRadius: '6px', padding: '8px 16px', cursor: 'pointer' }}
                 onClick={() => window.location.href = '/admin'}
               >
                 Admin Panel
               </button>
-            </>
-          )}
-        </div>
-        <button onClick={handleLogout} style={logoutBtnStyle}>Logout</button>
-      </div>
-      <div style={infoStyle}>{day}, {date}</div>
-      <div style={clockStyle}>
-        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-      </div>
-          </div>
-          <div className="dashboard-right">
-      <div style={btnContainerStyle}>
-              <button className="dashboard-btn" onClick={handleStart} style={btnStyle}>
-          Begin Work
-        </button>
-              <button className="dashboard-btn" onClick={handleLunchStart} style={btnStyle}>
-          Lunch Break Start
-        </button>
-              <button className="dashboard-btn" onClick={handleLunchEnd} style={btnStyle}>
-          Lunch Break End
-        </button>
-              <button className="dashboard-btn" onClick={handleEnd} style={btnStyle}>
-          End Work
-        </button>
-              <button className="dashboard-btn" onClick={() => setShowReportSection(true)} style={{...btnStyle, background: '#28a745'}}>
-          Report
-        </button>
-      </div>
-             {user.location && (
-             <div className="dashboard-summary" style={{...summaryStyle, textAlign: 'center', marginTop: 16, fontWeight: 600, color: 'black' }}>
-           Location: {user.location.name}
-         </div>
-       )}
-      <div style={{ marginTop: 24, fontSize: 16 }}>
-              <div className="dashboard-card" style={cardStyle}>
-          <div style={{ color: 'black' }}>Start Time</div>
-          <div style={{ color: 'black' }}>
-            {startTime ? getTimeString(startTime) : '-- : --'}
-            <span style={{fontSize:12, color:'black', marginLeft:5}}>{findLocation(startTime, locations)}</span>
+            )}
+            <button 
+              style={{ background: '#ff4d4f', color: 'white', border: 'none', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer' }}
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
           </div>
         </div>
-              <div className="dashboard-card" style={cardStyle}>
-          <div style={{ color: 'black' }}>Lunch</div>
-          <div style={{ color: 'black' }}>
-            {lunchStartTime ? getTimeString(lunchStartTime) : '-- : --'}
-            <span style={{fontSize:12, color:'black', marginLeft:5}}>{findLocation(lunchStartTime, locations)}</span>
-            {' - '}
-            {lunchEndTime ? getTimeString(lunchEndTime) : '-- : --'}
-            <span style={{fontSize:12, color:'black', marginLeft:5}}>{findLocation(lunchEndTime, locations)}</span>
-          </div>
-        </div>
-              <div className="dashboard-card" style={cardStyle}>
-          <div style={{ color: 'black' }}>End Time</div>
-          <div style={{ color: 'black' }}>
-            {endTime ? getTimeString(endTime) : '-- : --'}
-            <span style={{fontSize:12, color:'black', marginLeft:5}}>{findLocation(endTime, locations)}</span>
-          </div>
-        </div>
-        {totalHours && <div style={{ marginTop: 12, fontWeight: 600 }}>Total Hours Worked: {totalHours}</div>}
-      </div>
-          </div>
-        </div>
-      {/* Report Section */}
-      {showReportSection && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-            <div className="dashboard-card" style={{
-            background: '#fff',
-            borderRadius: 12,
-            padding: 24,
-            maxWidth: 500,
-            width: '100%',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}>
-                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-               <h2 style={{ margin: 0, color: 'black' }}>Submit Report</h2>
-               <button 
-                 onClick={() => setShowReportSection(false)}
-                 style={{
-                   background: 'none',
-                   border: 'none',
-                   fontSize: 24,
-                   cursor: 'pointer',
-                   color: 'black'
-                 }}
-               >
-                 ×
-               </button>
-             </div>
+      </header>
 
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Report Type *</label>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                  onClick={() => {
-                    setReportType('all_ok');
-                    setReportMessage('Everything is working fine today. No issues to report.');
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: 12,
-                    border: '2px solid',
-                    borderRadius: 8,
-                    background: reportType === 'all_ok' ? '#28a745' : '#fff',
-                    color: reportType === 'all_ok' ? '#fff' : '#28a745',
-                    cursor: 'pointer',
-                    fontWeight: 600
-                  }}
-                >
-                  All OK
-                </button>
-                <button
-                  onClick={() => {
-                    setReportType('problem');
-                    setReportMessage('');
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: 12,
-                    border: '2px solid',
-                    borderRadius: 8,
-                    background: reportType === 'problem' ? '#dc3545' : '#fff',
-                    color: reportType === 'problem' ? '#fff' : '#dc3545',
-                    cursor: 'pointer',
-                    fontWeight: 600
-                  }}
-                >
-                  Report Problem
-                </button>
+        {/* Live Data Section */}
+      <section style={{ marginBottom: '2rem' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '1.5rem', color: '#1f2937' }}>Live Security Status</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👥</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937' }}>{liveData.activeGuards}</div>
+            <div style={{ color: '#6b7280' }}>Active Guards</div>
+            <div style={{ background: '#d1fae5', color: '#065f46', padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.75rem', marginTop: '0.5rem' }}>On Duty</div>
+                </div>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📍</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937' }}>{liveData.totalPosts}</div>
+            <div style={{ color: '#6b7280' }}>Security Posts</div>
+            <div style={{ background: '#d1fae5', color: '#065f46', padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.75rem', marginTop: '0.5rem' }}>Covered</div>
               </div>
-            </div>
-
-            {reportType === 'problem' && (
-              <>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Date</label>
-                  <input
-                    type="date"
-                    value={reportDate}
-                    onChange={(e) => setReportDate(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: 12,
-                      border: '1px solid #ddd',
-                      borderRadius: 8,
-                      fontSize: 16
-                    }}
-                  />
+          <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⚠️</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937' }}>{liveData.incidentsToday}</div>
+            <div style={{ color: '#6b7280' }}>Incidents Today</div>
+            <div style={{ background: '#fef3c7', color: '#92400e', padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.75rem', marginTop: '0.5rem' }}>Monitoring</div>
                 </div>
-
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Time</label>
-                  <input
-                    type="time"
-                    value={reportTime}
-                    onChange={(e) => setReportTime(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: 12,
-                      border: '1px solid #ddd',
-                      borderRadius: 8,
-                      fontSize: 16
-                    }}
-                  />
+          <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937' }}>{liveData.checkInsToday}</div>
+            <div style={{ color: '#6b7280' }}>Check-ins Today</div>
+            <div style={{ background: '#d1fae5', color: '#065f46', padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.75rem', marginTop: '0.5rem' }}>Active</div>
+              </div>
                 </div>
+        <div style={{ textAlign: 'center', color: '#6b7280', fontSize: '0.875rem' }}>
+          Last updated: {liveData.lastUpdate instanceof Date ? liveData.lastUpdate.toLocaleTimeString() : 'Never'}
+              <button 
+            style={{ background: 'none', border: 'none', fontSize: '1rem', cursor: 'pointer', marginLeft: '0.5rem' }}
+                onClick={loadLiveData}
+                disabled={isLoadingLiveData}
+                title="Refresh live data"
+              >
+            🔄
+              </button>
+          </div>
+        </section>
 
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Location</label>
-                  <input
-                    type="text"
-                    value={reportLocation}
-                    onChange={(e) => setReportLocation(e.target.value)}
-                    placeholder="Enter location details"
-                    style={{
-                      width: '100%',
-                      padding: 12,
-                      border: '1px solid #ddd',
-                      borderRadius: 8,
-                      fontSize: 16
-                    }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Add Pictures</label>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handlePictureUpload}
-                    style={{
-                      width: '100%',
-                      padding: 12,
-                      border: '1px solid #ddd',
-                      borderRadius: 8,
-                      fontSize: 16
-                    }}
-                  />
-                  {reportPictures.length > 0 && (
-                    <div style={{ marginTop: 8, fontSize: 14, color: 'black' }}>
-                      {reportPictures.length} picture(s) selected
+        {/* Main Dashboard Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '350px 1fr', gap: '2rem', alignItems: 'start' }}>
+          {/* Left Column - Attendance Controls */}
+          <div style={{ width: '100%' }}>
+            <>
+            <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
+              <h2 style={{ margin: '0 0 1rem 0', color: '#1f2937' }}>Attendance Control</h2>
+              
+              {/* Location Info */}
+              <div style={{ marginBottom: '1rem' }}>
+                <h3 style={{ margin: '0 0 0.75rem 0', color: '#374151', fontSize: '1rem' }}>📍 Current Location</h3>
+                <div>
+                  {location && typeof location === 'object' ? (
+                    <>
+                      <div style={{ fontFamily: 'Courier New, monospace', background: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+                        📍 {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                          🔄 Auto-updating every 2 min
+                        </div>
+                      </div>
+                      <button 
+                        style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', width: '100%' }}
+                        onClick={() => updateLocation()}
+                      >
+                        🔄 Refresh Now
+                      </button>
+                    </>
+                  ) : (
+                    <div style={{ color: '#ef4444', background: '#fef2f2', padding: '0.75rem', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                      ❌ {location || 'Location access required'}
+                      <button 
+                        style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', marginTop: '0.5rem', width: '100%' }}
+                        onClick={() => updateLocation()}
+                      >
+                        🔄 Try Again
+                      </button>
                     </div>
                   )}
                 </div>
-              </>
-            )}
+              </div>
 
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Message *</label>
-              <textarea
-                value={reportMessage}
-                onChange={(e) => setReportMessage(e.target.value)}
-                placeholder="Enter your report message..."
-                rows={4}
-                style={{
-                  width: '100%',
-                  padding: 12,
-                  border: '1px solid #ddd',
-                  borderRadius: 8,
-                  fontSize: 16,
-                  resize: 'vertical'
-                }}
-              />
+              {/* Control Buttons */}
+            <div style={{ marginBottom: '1.5rem' }}>
+                {!started ? (
+                <button 
+                  style={{ 
+                    width: '100%', 
+                    padding: '0.75rem', 
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    fontWeight: '600', 
+                    cursor: 'pointer',
+                    background: location ? '#10b981' : '#9ca3af',
+                    color: 'white',
+                    marginBottom: '0.5rem'
+                  }}
+                  onClick={handleStart} 
+                  disabled={!location}
+                >
+                    🟢 Start Work
+                  </button>
+                ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {!lunchStarted ? (
+                    <button 
+                      style={{ 
+                        width: '100%', 
+                        padding: '0.75rem', 
+                        border: 'none', 
+                        borderRadius: '8px', 
+                        fontWeight: '600', 
+                        cursor: 'pointer',
+                        background: '#f59e0b',
+                        color: 'white'
+                      }}
+                      onClick={handleLunchStart}
+                    >
+                        🍽️ Start Lunch
+                      </button>
+                    ) : (
+                    <button 
+                      style={{ 
+                        width: '100%', 
+                        padding: '0.75rem', 
+                        border: 'none', 
+                        borderRadius: '8px', 
+                        fontWeight: '600', 
+                        cursor: 'pointer',
+                        background: '#f59e0b',
+                        color: 'white'
+                      }}
+                      onClick={handleLunchEnd}
+                    >
+                        ⏰ End Lunch
+                      </button>
+                    )}
+                    
+                  <button 
+                    style={{ 
+                      width: '100%', 
+                      padding: '0.75rem', 
+                      border: 'none', 
+                      borderRadius: '8px', 
+                      fontWeight: '600', 
+                      cursor: 'pointer',
+                      background: '#ef4444',
+                      color: 'white'
+                    }}
+                    onClick={handleEnd}
+                  >
+                      🔴 End Work
+                    </button>
+                    
+                  <button 
+                    style={{ 
+                      width: '100%', 
+                      padding: '0.75rem', 
+                      border: 'none', 
+                      borderRadius: '8px', 
+                      fontWeight: '600', 
+                      cursor: 'pointer',
+                      background: '#6b7280',
+                      color: 'white'
+                    }}
+                    onClick={handleReset}
+                  >
+                      🔄 Reset Session
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Session Info */}
+              {started && (
+              <div>
+                <h3 style={{ margin: '0 0 1rem 0', color: '#374151', fontSize: '1rem' }}>Session Details</h3>
+                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #f3f4f6' }}>
+                    <span style={{ fontWeight: '500', color: '#374151' }}>Start Time:</span>
+                    <span style={{ color: '#6b7280', fontFamily: 'Courier New, monospace' }}>{startTime?.toLocaleTimeString() || 'N/A'}</span>
+                    </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #f3f4f6' }}>
+                    <span style={{ fontWeight: '500', color: '#374151' }}>Lunch Start:</span>
+                    <span style={{ color: '#6b7280', fontFamily: 'Courier New, monospace' }}>{lunchStartTime ? lunchStartTime.toLocaleTimeString() : 'Not started'}</span>
+                    </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #f3f4f6' }}>
+                    <span style={{ fontWeight: '500', color: '#374151' }}>Lunch End:</span>
+                    <span style={{ color: '#6b7280', fontFamily: 'Courier New, monospace' }}>{lunchEndTime ? lunchEndTime.toLocaleTimeString() : 'Not ended'}</span>
+                    </div>
+                    {endTime && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid #f3f4f6' }}>
+                      <span style={{ fontWeight: '500', color: '#374151' }}>End Time:</span>
+                      <span style={{ color: '#6b7280', fontFamily: 'Courier New, monospace' }}>{endTime.toLocaleTimeString()}</span>
+                      </div>
+                    )}
+                    {totalHours && (
+                    <div style={{ background: '#f0f9ff', padding: '0.5rem', borderRadius: '6px', borderLeft: '3px solid #3b82f6' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: '500', color: '#374151' }}>Total Hours:</span>
+                        <span style={{ color: '#1d4ed8', fontWeight: '600', fontFamily: 'Courier New, monospace' }}>{totalHours} hrs</span>
+                      </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                onClick={() => setShowReportSection(false)}
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  border: '1px solid #ddd',
-                  borderRadius: 8,
-                  background: '#fff',
-                  color: 'black',
-                  cursor: 'pointer',
-                  fontWeight: 600
-                }}
-                disabled={submittingReport}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={submitReport}
-                style={{
-                  flex: 1,
-                  padding: 12,
-                  border: 'none',
-                  borderRadius: 8,
-                  background: '#646cff',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontWeight: 600
-                }}
-                disabled={submittingReport}
-              >
-                {submittingReport ? 'Submitting...' : 'Submit Report'}
-              </button>
+            {/* Quick Actions */}
+            <div style={{ background: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', width: '100%' }}>
+              <h3 style={{ margin: '0 0 1rem 0', color: '#1f2937' }}>Quick Actions</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <button 
+                  style={{ 
+                    background: '#8b5cf6', 
+                    color: 'white', 
+                    border: 'none', 
+                    padding: '0.75rem 1rem', 
+                    borderRadius: '8px', 
+                    fontWeight: '600', 
+                    cursor: 'pointer',
+                    width: '100%',
+                    fontSize: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                  onClick={() => window.location.href = '/checkin'}
+                >
+                  📍 Check-in
+                </button>
+                <button 
+                  style={{ 
+                    background: '#8b5cf6', 
+                    color: 'white', 
+                    border: 'none', 
+                    padding: '0.75rem 1rem', 
+                    borderRadius: '8px', 
+                    fontWeight: '600', 
+                    cursor: 'pointer',
+                    width: '100%',
+                    fontSize: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                  onClick={() => window.location.href = '/reports'}
+                >
+                  📊 Reports
+                </button>
+                <button 
+                  style={{ 
+                    background: '#8b5cf6', 
+                    color: 'white', 
+                    border: 'none', 
+                    padding: '0.75rem 1rem', 
+                    borderRadius: '8px', 
+                    fontWeight: '600', 
+                    cursor: 'pointer',
+                    width: '100%',
+                    fontSize: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                  onClick={() => window.location.href = '/map'}
+                >
+                  🗺️ Live Map
+                </button>
+              </div>
             </div>
+            </>
           </div>
         </div>
-      )}
-    </div>
-    </>
+      </div>
+    {/* </div> */}
+  </>
   );
 }
-
-const btnStyle = {
-  padding: 14,
-  borderRadius: 8,
-  fontSize: 18,
-  fontWeight: 600,
-  background: '#646cff',
-  color: '#fff',
-  border: 'none',
-  width: '100%',
-};
-
-function getTimeString(date) {
-  if (!date) return '--';
-  if (typeof date === 'string') date = new Date(date);
-  return date.toLocaleTimeString();
-} 
